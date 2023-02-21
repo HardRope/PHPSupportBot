@@ -1,0 +1,5 @@
+Django==3.2.*
+dj-database-url==1.2.*
+environs==9.5.*
+python-telegram-bot==13.*
+psycopg2==2.9.*
