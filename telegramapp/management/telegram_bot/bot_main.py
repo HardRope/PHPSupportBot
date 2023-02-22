@@ -27,8 +27,11 @@ from .client_branch import (
     create_ticket_handler,
     active_orders_handler,
     complete_orders_handler,
-    get_order_handler
+    get_order_handler,
+    tariffs_handler,
+    tariff_handler,
 )
+
 logger = logging.getLogger(__name__)
 
 
@@ -67,8 +70,14 @@ def handle_users_reply(update, context, db):
         'CLIENT_ACTIVE_ORDERS': partial(active_orders_handler, db=db),
         'CLIENT_COMPLETE_ORDERS': partial(complete_orders_handler, db=db),
         'CLIENT_ORDER': partial(get_order_handler, db=db),
+        'TARIFFS': partial(tariffs_handler, db=db),
+        'TARIFF': tariff_handler,
+
+        # Payment states
+        'PAYMENT': None,
+
         # Contractor states
-        
+
         # Manager states
     }
 

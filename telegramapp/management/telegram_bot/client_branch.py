@@ -7,6 +7,8 @@ from .telegram_keyboards.client_keyboards import (
     get_active_orders_menu,
     get_complete_orders_menu,
     get_order_menu,
+    get_tariffs_menu,
+    get_tariff_menu,
 )
 
 
@@ -66,6 +68,19 @@ def send_complete_orders(context, chat_id, message_id, message_text=None):
     )
 
 
+def send_tariffs(context, chat_id, message_id):
+    message_text = 'Доступные тарифы, Ваш тариф, инфо о тарифах, для покупки - выберите тариф.'
+    context.bot.send_message(
+        chat_id=chat_id,
+        text=dedent(message_text),
+        reply_markup=get_tariffs_menu()
+    )
+    context.bot.delete_message(
+        chat_id=chat_id,
+        message_id=message_id
+    )
+
+
 def client_main_menu_handler(update, context):
     query = update.callback_query
     chat_id = query.message.chat_id
@@ -94,7 +109,8 @@ def client_main_menu_handler(update, context):
         return 'CLIENT_COMPLETE_ORDERS'
 
     if query.data == 'tariffs':
-        pass
+        send_tariffs(context, chat_id, message_id)
+        return 'TARIFFS'
 
     if query.data == 'ticket':
         message_text = 'Чтобы задать вопрос менеджеру, отправьте сообщение и мы свяжемся с Вами в ближайшее время.'
@@ -251,12 +267,42 @@ def get_order_handler(update, context, db):
         return saved_state
 
 
-def get_tariffs_handler(update, context):
+def tariffs_handler(update, context, db):
     query = update.callback_query
     chat_id = query.message.chat_id
     message_id = query.message.message_id
-    #TODO: TO-DO
 
+    if query.data == 'back':
+        send_main_menu_message(context, chat_id, message_id)
+        return 'CLIENT_MAIN_MENU'
+    elif query.data:
+        user = f"user_tg_{chat_id}"
+        db.set(user, json.dumps({'tariff_name': query.data,}))
+        message_text = 'Инфо о тарифе, стоимость тарифа, для покупки нажмите "Купить"'
+        context.bot.send_message(
+            chat_id=chat_id,
+            text=dedent(message_text),
+            reply_markup=get_tariff_menu()
+        )
+
+        context.bot.delete_message(
+            chat_id=chat_id,
+            message_id=message_id
+        )
+        return 'TARIFF'
+
+
+def tariff_handler(update, context):
+    query = update.callback_query
+    chat_id = query.message.chat_id
+    message_id = query.message.message_id
+
+    if query.data == 'back':
+        send_tariffs(context, chat_id, message_id)
+        return 'TARIFFS'
+    elif query.data:
+        # TODO: прикручиваем оплату
+        return 'PAYMENT'
 
 def create_ticket_handler(update, context, db):
     query = update.callback_query
