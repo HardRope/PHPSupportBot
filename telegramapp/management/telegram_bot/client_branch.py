@@ -86,6 +86,7 @@ def client_main_menu_handler(update, context):
 
     if query.data == 'tariffs':
         pass
+
     if query.data == 'ticket':
         message_text = 'Чтобы задать вопрос менеджеру, отправьте сообщение и мы свяжемся с Вами в ближайшее время.'
         context.bot.send_message(
@@ -93,7 +94,6 @@ def client_main_menu_handler(update, context):
             text=dedent(message_text),
             reply_markup=get_back_menu()
         )
-
         context.bot.delete_message(
             chat_id=chat_id,
             message_id=message_id
@@ -149,7 +149,6 @@ def active_orders_handler(update, context, db):
             text=dedent(message_text),
             reply_markup=get_order_menu()
         )
-
         context.bot.delete_message(
             chat_id=chat_id,
             message_id=message_id
@@ -165,7 +164,6 @@ def complete_orders_handler(update, context, db):
         send_main_menu_message(context, chat_id, message_id)
         return 'CLIENT_MAIN_MENU'
     if query.data.isdigit():
-
         user = f"user_tg_{query.message.chat_id}"
         db.set(
             user,
@@ -239,12 +237,7 @@ def create_ticket_handler(update, context, db):
 
     user = f"user_tg_{chat_id}"
     saved_state = json.loads(db.get(user))['state']
-    if saved_state:
-        if 'ACTIVE' in saved_state:
-            send_active_orders(context, chat_id, message_id)
-        else:
-            send_complete_orders(context, chat_id, message_id)
-        return saved_state
+
 
     if query and query.data == 'back':
         send_main_menu_message(context, chat_id, message_id)
@@ -252,6 +245,13 @@ def create_ticket_handler(update, context, db):
     else:
         # TODO: создать ticket
         ticket_text = update.message.text
+
+        if saved_state:
+            if 'ACTIVE' in saved_state:
+                send_active_orders(context, chat_id, message_id)
+            else:
+                send_complete_orders(context, chat_id, message_id)
+            return saved_state
 
         message_text = 'Сообщение менеджеру отправлено'
         send_main_menu_message(context, chat_id, message_id, message_text)

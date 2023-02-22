@@ -19,7 +19,6 @@ def send_start_message(context, chat_id, message_id):
         text=dedent(message_text),
         reply_markup=get_role_choosing_menu()
     )
-
     context.bot.delete_message(
         chat_id=chat_id,
         message_id=message_id
@@ -33,7 +32,6 @@ def send_contractor_info(context, chat_id, message_id):
         text=dedent(message_text),
         reply_markup=get_send_resume_menu()
     )
-
     context.bot.delete_message(
         chat_id=chat_id,
         message_id=message_id
@@ -108,7 +106,6 @@ def request_contractor_resume_handler(update, context):
             text=dedent(message_text),
             reply_markup=get_back_menu(),
         )
-
         context.bot.delete_message(
             chat_id=chat_id,
             message_id=message_id
@@ -138,7 +135,6 @@ def get_resume_handler(update, context):
             text=dedent(message_text),
             reply_markup=get_check_status_menu(),
         )
-
         context.bot.delete_message(
             chat_id=chat_id,
             message_id=message_id
@@ -160,20 +156,19 @@ def check_status_handler(update, context):
             text=dedent(message_text),
             reply_markup=get_main_menu(),
         )
-
         context.bot.delete_message(
             chat_id=chat_id,
             message_id=message_id
         )
         return 'MAIN_MENU'
-    elif status == False:
+
+    if status == False:
         message_text = 'Заявка ещё находится на рассмотрении'
         context.bot.send_message(
             chat_id=chat_id,
             text=dedent(message_text),
             reply_markup=get_check_status_menu(),
         )
-
         context.bot.delete_message(
             chat_id=chat_id,
             message_id=message_id
