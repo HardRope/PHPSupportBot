@@ -13,7 +13,7 @@ from .telegram_keyboards.client_keyboards import (
 def send_main_menu_message(context, chat_id, message_id, message_text=None):
     default_text = 'Ваш тариф такой-то, заявок осталось столько-то, ещё какая-то важная инфа.'
     if message_text:
-        message_text = f'{default_text} \n {message_text}'
+        message_text = f'{default_text} \n\n {message_text}'
     else:
         message_text = default_text
 
@@ -29,8 +29,13 @@ def send_main_menu_message(context, chat_id, message_id, message_text=None):
     )
 
 
-def send_active_orders(context, chat_id, message_id):
-    message_text = 'Сейчас в работе N заказов'
+def send_active_orders(context, chat_id, message_id, message_text=None):
+    default_text = 'Сейчас в работе N заказов'
+    if message_text:
+        message_text = f'{default_text} \n\n {message_text}'
+    else:
+        message_text = default_text
+
     context.bot.send_message(
         chat_id=chat_id,
         text=dedent(message_text),
@@ -43,8 +48,12 @@ def send_active_orders(context, chat_id, message_id):
     )
 
 
-def send_complete_orders(context, chat_id, message_id):
-    message_text = 'Список завершённых заказов'
+def send_complete_orders(context, chat_id, message_id, message_text=None):
+    default_text = 'Список завершённых заказов'
+    if message_text:
+        message_text = f'{default_text} \n\n {message_text}'
+    else:
+        message_text = default_text
     context.bot.send_message(
         chat_id=chat_id,
         text=dedent(message_text),
@@ -134,7 +143,7 @@ def active_orders_handler(update, context, db):
         return 'CLIENT_MAIN_MENU'
     if query.data.isdigit():
 
-        user = f"user_tg_{query.message.chat_id}"
+        user = f"user_tg_{chat_id}"
         db.set(
             user,
             json.dumps({
@@ -143,7 +152,7 @@ def active_orders_handler(update, context, db):
             })
         )
 
-        message_text = 'Инфо о заказе'
+        message_text = 'Инфо о заказе.   Для отправки сообщения исполнителю, введите его в чат'
         context.bot.send_message(
             chat_id=chat_id,
             text=dedent(message_text),
@@ -164,7 +173,7 @@ def complete_orders_handler(update, context, db):
         send_main_menu_message(context, chat_id, message_id)
         return 'CLIENT_MAIN_MENU'
     if query.data.isdigit():
-        user = f"user_tg_{query.message.chat_id}"
+        user = f"user_tg_{chat_id}"
         db.set(
             user,
             json.dumps({
@@ -173,7 +182,7 @@ def complete_orders_handler(update, context, db):
             })
         )
 
-        message_text = 'Инфо о заказе'
+        message_text = 'Инфо о заказе.'
         context.bot.send_message(
             chat_id=chat_id,
             text=dedent(message_text),
@@ -189,20 +198,28 @@ def complete_orders_handler(update, context, db):
 
 def get_order_handler(update, context, db):
     query = update.callback_query
-    chat_id = query.message.chat_id
-    message_id = query.message.message_id
+    if update.message:
+        chat_id = update.message.chat_id
+        message_id = update.message.message_id
+    elif query:
+        chat_id = update.callback_query.message.chat_id
+        message_id = update.callback_query.message.message_id
 
-    user = f"user_tg_{query.message.chat_id}"
+
+    user = f"user_tg_{chat_id}"
     order_id = json.loads(db.get(user))['order_id']
+    saved_state = json.loads(db.get(user))['state']
 
-    if query.data == 'back':
-        saved_state = json.loads(db.get(user))['state']
+    if query and query.data == 'back':
+        db.getdel(user)
         if 'ACTIVE' in saved_state:
             send_active_orders(context, chat_id, message_id)
         else:
             send_complete_orders(context, chat_id, message_id)
         return saved_state
-    if query.data == 'ticket':
+
+    # TODO: проверка, выполнен ли заказ
+    if query and query.data == 'ticket':
         message_text = 'Чтобы задать вопрос менеджеру, отправьте сообщение и мы свяжемся с Вами в ближайшее время.'
         context.bot.send_message(
             chat_id=chat_id,
@@ -215,6 +232,19 @@ def get_order_handler(update, context, db):
             message_id=message_id
         )
         return 'CREATE_TICKET'
+
+    # TODO: проверить, выполнен ли заказ, переслать вопрос исполнителю
+    send_client_answer = update.message.text
+    message_text = 'Ваш вопрос исполнителю отправлен'
+
+    if 'ACTIVE' in saved_state:
+        db.getdel(user)
+        send_active_orders(context, chat_id, message_id, message_text)
+
+        return saved_state
+
+
+
 
 
 def get_tariffs_handler(update, context):
@@ -237,7 +267,7 @@ def create_ticket_handler(update, context, db):
 
     user = f"user_tg_{chat_id}"
     saved_state = json.loads(db.get(user))['state']
-
+    db.getdel(user)
 
     if query and query.data == 'back':
         send_main_menu_message(context, chat_id, message_id)
@@ -246,13 +276,13 @@ def create_ticket_handler(update, context, db):
         # TODO: создать ticket
         ticket_text = update.message.text
 
+        message_text = 'Сообщение менеджеру отправлено'
         if saved_state:
             if 'ACTIVE' in saved_state:
-                send_active_orders(context, chat_id, message_id)
+                send_active_orders(context, chat_id, message_id, message_text)
             else:
-                send_complete_orders(context, chat_id, message_id)
+                send_complete_orders(context, chat_id, message_id, message_text)
             return saved_state
 
-        message_text = 'Сообщение менеджеру отправлено'
         send_main_menu_message(context, chat_id, message_id, message_text)
         return 'CLIENT_MAIN_MENU'

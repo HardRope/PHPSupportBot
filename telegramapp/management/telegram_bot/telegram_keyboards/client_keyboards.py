@@ -24,7 +24,8 @@ def get_back_menu():
 
 def get_active_orders_menu():
     # TODO: список активных заказов клиента -> id
-    inline_keyboard = [
+    inline_keyboard = [[InlineKeyboardButton(f'Заказ {id}', callback_data=id)] for id in range(3)]
+    inline_keyboard += [
         [InlineKeyboardButton('Назад', callback_data='back')],
     ]
     inline_kb_markup = InlineKeyboardMarkup(inline_keyboard)
@@ -33,7 +34,9 @@ def get_active_orders_menu():
 
 def get_complete_orders_menu():
     #TODO: список выполненных заказов клиента -> id
-    inline_keyboard = [
+
+    inline_keyboard = [[InlineKeyboardButton(f'Заказ {id}', callback_data=id)] for id in range(3)]
+    inline_keyboard += [
         [InlineKeyboardButton('Назад', callback_data='back')],
     ]
     inline_kb_markup = InlineKeyboardMarkup(inline_keyboard)
