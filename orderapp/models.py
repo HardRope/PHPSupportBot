@@ -59,7 +59,7 @@ class Manager(models.Model):
         verbose_name_plural = 'Менеджеры'
 
 
-class Сontractor(models.Model):
+class Contractor(models.Model):
     user = models.ForeignKey(
         Person,
         on_delete=models.CASCADE,
@@ -109,7 +109,7 @@ class Order(models.Model):
     ]
     description = models.TextField(verbose_name='Описание', blank=True)
     contractor = models.ForeignKey(
-        Сontractor,
+        Contractor,
         on_delete=models.SET_NULL,
         related_name='orders',
         verbose_name='Исполнитель',

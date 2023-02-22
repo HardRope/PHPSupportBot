@@ -1,6 +1,6 @@
 from django.contrib import admin
 
-from orderapp.models import Person, Client, Manager, Сontractor, Subscription, Order, Ticket
+from orderapp.models import Person, Client, Manager, Contractor, Subscription, Order, Ticket
 from paymentapp.models import Tariff
 
 
@@ -19,8 +19,8 @@ class ManagerAdmin(admin.ModelAdmin):
     list_display = ['user', 'active']
 
 
-@admin.register(Сontractor)
-class СontractorAdmin(admin.ModelAdmin):
+@admin.register(Contractor)
+class ContractorAdmin(admin.ModelAdmin):
     list_display = ['user', 'active']
 
 
