@@ -17,6 +17,13 @@ class Person(User):
         verbose_name='Имя пользователя в Телеграм',
     )
 
+    def __str__(self):
+        return self.tg_username
+
+    class Meta:
+        verbose_name = 'Пользователь'
+        verbose_name_plural = 'Пользователи'
+
 
 class Client(models.Model):
     user = models.ForeignKey(
@@ -26,6 +33,9 @@ class Client(models.Model):
         verbose_name='Учетная запись Телеграм',
     )
     active = models.BooleanField(verbose_name='Активен', db_index=True)
+
+    def __str__(self):
+        return self.user
 
     class Meta:
         verbose_name = 'Клиент'
@@ -41,6 +51,9 @@ class Manager(models.Model):
     )
     active = models.BooleanField(verbose_name='Активен', db_index=True)
 
+    def __str__(self):
+        return self.user
+
     class Meta:
         verbose_name = 'Менеджер'
         verbose_name_plural = 'Менеджеры'
@@ -54,6 +67,9 @@ class Сontractor(models.Model):
         verbose_name='Учетная запись Телеграм',
     )
     active = models.BooleanField(verbose_name='Активен', db_index=True)
+
+    def __str__(self):
+        return self.user
 
     class Meta:
         verbose_name = 'Подрядчик'
@@ -75,6 +91,9 @@ class Subscription(models.Model):
         null=True,
     )
     created_at = models.DateTimeField(verbose_name='Дата оформления')
+
+    def __str__(self):
+        return self.tariff
 
     class Meta:
         verbose_name = 'Подписка'
@@ -114,6 +133,9 @@ class Order(models.Model):
                               choices=STATUS_CHOICES,
                               verbose_name='Статус',
                               db_index=True)
+    
+    def __str__(self):
+        return self.id
 
     class Meta:
         verbose_name = 'Заявка'
@@ -149,6 +171,9 @@ class Ticket(models.Model):
                               choices=STATUS_CHOICES,
                               verbose_name='Статус',
                               db_index=True)
+    
+    def __str__(self):
+        return self.id
 
     class Meta:
         verbose_name = 'Обращение'

@@ -18,6 +18,9 @@ class Tariff(models.Model):
     order_cost = models.IntegerField(verbose_name='Стоимость выполнения одной заявки')
     active = models.BooleanField(verbose_name='Активен', db_index=True)
 
+    def __str__(self):
+        return self.name
+
     class Meta:
         verbose_name = 'Тариф'
         verbose_name_plural = 'Тарифы'
