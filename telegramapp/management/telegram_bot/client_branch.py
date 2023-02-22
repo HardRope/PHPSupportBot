@@ -143,6 +143,14 @@ def create_order_handler(update, context):
     else:
         # TODO: создать order
         order_text = update.message.text
+        context.bot.send_message(
+            chat_id=chat_id,
+            text=dedent(f'Ваша заявка: \n {order_text}'),
+        )
+        context.bot.delete_message(
+            chat_id=chat_id,
+            message_id=message_id - 1
+        )
 
         message_text = 'Заявка успешно создана. Вы можете проверить её в списке активных заказов'
         send_main_menu_message(context, chat_id, message_id, message_text)
