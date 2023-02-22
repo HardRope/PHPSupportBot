@@ -205,7 +205,6 @@ def get_order_handler(update, context, db):
         chat_id = update.callback_query.message.chat_id
         message_id = update.callback_query.message.message_id
 
-
     user = f"user_tg_{chat_id}"
     order_id = json.loads(db.get(user))['order_id']
     saved_state = json.loads(db.get(user))['state']
@@ -238,13 +237,18 @@ def get_order_handler(update, context, db):
     message_text = 'Ваш вопрос исполнителю отправлен'
 
     if 'ACTIVE' in saved_state:
+        context.bot.send_message(
+            chat_id=chat_id,
+            text=dedent(f'Сообщение по заказу {order_id}: \n {send_client_answer}'),
+        )
+        context.bot.delete_message(
+            chat_id=chat_id,
+            message_id=message_id - 1
+        )
         db.getdel(user)
         send_active_orders(context, chat_id, message_id, message_text)
 
         return saved_state
-
-
-
 
 
 def get_tariffs_handler(update, context):
@@ -265,9 +269,12 @@ def create_ticket_handler(update, context, db):
     else:
         return
 
-    user = f"user_tg_{chat_id}"
-    saved_state = json.loads(db.get(user))['state']
-    db.getdel(user)
+    try:
+        user = f"user_tg_{chat_id}"
+        saved_state = json.loads(db.get(user))['state']
+        db.getdel(user)
+    except:
+        saved_state = None
 
     if query and query.data == 'back':
         send_main_menu_message(context, chat_id, message_id)
@@ -275,6 +282,14 @@ def create_ticket_handler(update, context, db):
     else:
         # TODO: создать ticket
         ticket_text = update.message.text
+        context.bot.send_message(
+            chat_id=chat_id,
+            text=dedent(f'Ваш вопрос менеджеру: \n {ticket_text}'),
+        )
+        context.bot.delete_message(
+            chat_id=chat_id,
+            message_id=message_id - 1
+        )
 
         message_text = 'Сообщение менеджеру отправлено'
         if saved_state:
