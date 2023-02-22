@@ -26,13 +26,12 @@ class Person(User):
 
 
 class Client(models.Model):
-    user = models.ForeignKey(
+    user = models.OneToOneField(
         Person,
         on_delete=models.CASCADE,
-        related_name='clients',
-        verbose_name='Учетная запись Телеграм',
+        verbose_name='Пользователь',
     )
-    active = models.BooleanField(verbose_name='Активен', db_index=True)
+    active = models.BooleanField(verbose_name='Активен', default=False, db_index=True)
 
     def __str__(self):
         return self.user
@@ -43,13 +42,12 @@ class Client(models.Model):
 
 
 class Manager(models.Model):
-    user = models.ForeignKey(
+    user = models.OneToOneField(
         Person,
         on_delete=models.CASCADE,
-        related_name='managers',
-        verbose_name='Учетная запись Телеграм',
+        verbose_name='Пользователь',
     )
-    active = models.BooleanField(verbose_name='Активен', db_index=True)
+    active = models.BooleanField(verbose_name='Активен', default=False, db_index=True)
 
     def __str__(self):
         return self.user
@@ -60,13 +58,12 @@ class Manager(models.Model):
 
 
 class Contractor(models.Model):
-    user = models.ForeignKey(
+    user = models.OneToOneField(
         Person,
         on_delete=models.CASCADE,
-        related_name='contractors',
-        verbose_name='Учетная запись Телеграм',
+        verbose_name='Пользователь',
     )
-    active = models.BooleanField(verbose_name='Активен', db_index=True)
+    active = models.BooleanField(verbose_name='Активен', default=False, db_index=True)
 
     def __str__(self):
         return self.user
@@ -149,6 +146,14 @@ class Ticket(models.Model):
         ('CLO', 'Закрыто'),
     ]
     description = models.TextField(verbose_name='Описание', blank=True)
+    client = models.ForeignKey(
+        Client,
+        on_delete=models.SET_NULL,
+        related_name='tickets',
+        verbose_name='Подано клиентом',
+        null=True,
+        blank=True,
+    )
     order = models.ForeignKey(
         Order,
         on_delete=models.SET_NULL,
@@ -159,9 +164,11 @@ class Ticket(models.Model):
     )
     manager = models.ForeignKey(
         Manager,
-        on_delete=models.CASCADE,
+        on_delete=models.SET_NULL,
         related_name='tickets',
         verbose_name='Ответственный менеджер',
+        null=True,
+        blank=True,
     )
     created_at = models.DateTimeField(verbose_name='Создано', auto_now=True)
     closed_at = models.DateTimeField(verbose_name='Закрыто',
@@ -170,6 +177,7 @@ class Ticket(models.Model):
     status = models.CharField(max_length=3,
                               choices=STATUS_CHOICES,
                               verbose_name='Статус',
+                              default='NEW',
                               db_index=True)
     
     def __str__(self):
