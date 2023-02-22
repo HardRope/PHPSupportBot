@@ -4,12 +4,22 @@ from django.conf import settings
 
 import redis
 from telegram.ext import (
-    # Filters,
+    Filters,
     Updater,
     CallbackQueryHandler,
     CommandHandler,
-    # MessageHandler,
+    MessageHandler,
     # PreCheckoutQueryHandler,
+)
+
+from .welcome_branch import (
+    start,
+    confirm_role_handler,
+    client_confirmation_handler,
+    request_contractor_resume_handler,
+    get_resume_handler,
+    check_status_handler,
+    main_menu_handler,
 )
 
 logger = logging.getLogger(__name__)
@@ -36,6 +46,14 @@ def handle_users_reply(update, context, db):
 
     states_functions = {
         # Welcome states
+        'START': start,
+        'ROLE': confirm_role_handler,
+        'CONFIRMATION': client_confirmation_handler,
+        'REQUEST_RESUME': request_contractor_resume_handler,
+        'GET_RESUME': get_resume_handler,
+        'CHECK_STATUS': check_status_handler,
+        'MAIN_MENU': main_menu_handler,
+
         # Client states
         
         # Contractor states
@@ -43,10 +61,11 @@ def handle_users_reply(update, context, db):
         # Manager states
     }
 
-    print(user_state)
+    print(user_state)                                                   # отладочный принт
     state_handler = states_functions[user_state]
     try:
-        next_state = state_handler(context, update)
+        next_state = state_handler(update, context)
+        print(next_state)                                               # отладочный принт
         db.set(chat_id, next_state)
     except Exception as err:
         error(user_state, err)
@@ -71,6 +90,7 @@ def main():
     dispatcher = updater.dispatcher
 
     dispatcher.add_handler(CallbackQueryHandler(handler_connected_db))
+    dispatcher.add_handler(MessageHandler(Filters.text, handler_connected_db))
     dispatcher.add_handler(CommandHandler('start', handler_connected_db))
     dispatcher.add_error_handler(error)
 
