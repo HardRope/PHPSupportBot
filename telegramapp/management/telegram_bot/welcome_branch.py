@@ -8,6 +8,7 @@ from .telegram_keyboards.welcome_keyboards import (
     get_check_status_menu,
     get_main_menu,
 )
+from .client_branch import send_main_menu_message
 
 
 def send_start_message(context, chat_id, message_id):
@@ -84,8 +85,8 @@ def client_confirmation_handler(update, context):
     message_id = query.message.message_id
 
     if query.data == 'agree':
-        # TODO: создание client'a
-        return 'MAIN_MENU'
+        send_main_menu_message(context, chat_id, message_id)
+        return 'CLIENT_MAIN_MENU'
     elif query.data == 'back':
         send_start_message(context, chat_id, message_id)
         return 'ROLE'
@@ -178,7 +179,3 @@ def check_status_handler(update, context):
             message_id=message_id
         )
         return 'CHECK_STATUS'
-
-
-def main_menu_handler(update, context):
-    pass

@@ -19,9 +19,16 @@ from .welcome_branch import (
     request_contractor_resume_handler,
     get_resume_handler,
     check_status_handler,
-    main_menu_handler,
 )
 
+from .client_branch import (
+    client_main_menu_handler,
+    create_order_handler,
+    create_ticket_handler,
+    active_orders_handler,
+    complete_orders_handler,
+    get_order_handler
+)
 logger = logging.getLogger(__name__)
 
 
@@ -48,14 +55,18 @@ def handle_users_reply(update, context, db):
         # Welcome states
         'START': start,
         'ROLE': confirm_role_handler,
-        'CONFIRMATION': client_confirmation_handler,
         'REQUEST_RESUME': request_contractor_resume_handler,
         'GET_RESUME': get_resume_handler,
         'CHECK_STATUS': check_status_handler,
-        'MAIN_MENU': main_menu_handler,
 
         # Client states
-        
+        'CONFIRMATION': client_confirmation_handler,
+        'CLIENT_MAIN_MENU': client_main_menu_handler,
+        'CREATE_ORDER': create_order_handler,
+        'CREATE_TICKET': partial(create_ticket_handler, db=db),
+        'CLIENT_ACTIVE_ORDERS': partial(active_orders_handler, db=db),
+        'CLIENT_COMPLETE_ORDERS': partial(complete_orders_handler, db=db),
+        'CLIENT_ORDER': partial(get_order_handler, db=db),
         # Contractor states
         
         # Manager states
