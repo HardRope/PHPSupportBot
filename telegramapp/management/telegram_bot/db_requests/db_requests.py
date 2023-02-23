@@ -58,14 +58,16 @@ def get_active_orders(tg_chat_id):
     client = Client.objects.get(user__tg_chat_id=tg_chat_id)
     active_orders = Order.objects.filter(subscription__client=client)\
                                  .exclude(status='FIN')
-    return list(active_orders)
+    active_orders_id = [order.id for order in active_orders]
+    return active_orders_id
 
 #TODO: список выполненных заказов клиента -> [id's]
-def get_active_orders(tg_chat_id):
+def get_complete_orders(tg_chat_id):
     client = Client.objects.get(user__tg_chat_id=tg_chat_id)
     finished_orders = Order.objects.filter(subscription__client=client)\
                                  .filter(status='FIN')
-    return list(finished_orders)
+    finished_orders_id = [order.id for order in finished_orders]
+    return finished_orders_id
 
 #TODO: получение заказа по id -> json  + подгрузить tg_id и tg_username исполнителя
 def get_order(order_id):
@@ -102,7 +104,7 @@ def get_tariff_names():
 #TODO: инфо о тарифе -> json
 def get_tariff(tariff_name):
     try:
-        tariff = Order.objects.get(name=tariff_name)
+        tariff = Tariff.objects.get(name=tariff_name)
         return {
             'tariff_name': tariff.name,
             'description': tariff.description,

@@ -4,11 +4,19 @@ from textwrap import dedent
 from .telegram_keyboards.client_keyboards import (
     get_client_main_menu,
     get_back_menu,
-    get_active_orders_menu,
+    get_orders_menu,
     get_complete_orders_menu,
     get_order_menu,
     get_tariffs_menu,
     get_tariff_menu,
+)
+
+from .db_requests.db_requests import (
+    get_active_orders,
+    get_complete_orders,
+    get_order,
+    get_tariff_names,
+    get_tariff,
 )
 
 
@@ -32,7 +40,10 @@ def send_client_main_menu(context, chat_id, message_id, message_text=None):
 
 
 def send_active_orders(context, chat_id, message_id, message_text=None):
-    default_text = 'Сейчас в работе N заказов'
+    active_orders = get_active_orders(chat_id)
+    orders_count = len(active_orders)
+
+    default_text = f'Сейчас в работе {orders_count} заказов'
     if message_text:
         message_text = f'{default_text} \n\n {message_text}'
     else:
@@ -41,7 +52,7 @@ def send_active_orders(context, chat_id, message_id, message_text=None):
     context.bot.send_message(
         chat_id=chat_id,
         text=dedent(message_text),
-        reply_markup=get_active_orders_menu()
+        reply_markup=get_orders_menu(active_orders)
     )
 
     context.bot.delete_message(
@@ -51,6 +62,8 @@ def send_active_orders(context, chat_id, message_id, message_text=None):
 
 
 def send_complete_orders(context, chat_id, message_id, message_text=None):
+    complete_orders = get_complete_orders(chat_id)
+
     default_text = 'Список завершённых заказов'
     if message_text:
         message_text = f'{default_text} \n\n {message_text}'
@@ -59,7 +72,7 @@ def send_complete_orders(context, chat_id, message_id, message_text=None):
     context.bot.send_message(
         chat_id=chat_id,
         text=dedent(message_text),
-        reply_markup=get_complete_orders_menu(),
+        reply_markup=get_orders_menu(complete_orders),
     )
 
     context.bot.delete_message(
@@ -69,11 +82,12 @@ def send_complete_orders(context, chat_id, message_id, message_text=None):
 
 
 def send_tariffs(context, chat_id, message_id):
+    tariffs = get_tariff_names()
     message_text = 'Доступные тарифы, Ваш тариф, инфо о тарифах, для покупки - выберите тариф.'
     context.bot.send_message(
         chat_id=chat_id,
         text=dedent(message_text),
-        reply_markup=get_tariffs_menu()
+        reply_markup=get_tariffs_menu(tariffs)
     )
     context.bot.delete_message(
         chat_id=chat_id,
@@ -157,7 +171,7 @@ def create_order_handler(update, context):
         return 'CLIENT_MAIN_MENU'
 
 
-def active_orders_handler(update, context, db):
+def active_order_handler(update, context, db):
     query = update.callback_query
     chat_id = query.message.chat_id
     message_id = query.message.message_id
@@ -166,17 +180,20 @@ def active_orders_handler(update, context, db):
         send_client_main_menu(context, chat_id, message_id)
         return 'CLIENT_MAIN_MENU'
     if query.data.isdigit():
+        order_id = query.data
+        order = get_order(order_id)
 
         user = f"user_tg_{chat_id}"
         db.set(
             user,
             json.dumps({
-                'order_id': query.data,
+                'order_id': order_id,
+                'order_complete': False,
                 'state': 'CLIENT_ACTIVE_ORDERS'
             })
         )
 
-        message_text = 'Инфо о заказе.   Для отправки сообщения исполнителю, введите его в чат'
+        message_text = f'{order} \n\n Для отправки сообщения исполнителю, просто введите его в чат'
         context.bot.send_message(
             chat_id=chat_id,
             text=dedent(message_text),
@@ -189,7 +206,7 @@ def active_orders_handler(update, context, db):
         return 'CLIENT_ORDER'
 
 
-def complete_orders_handler(update, context, db):
+def complete_order_handler(update, context, db):
     query = update.callback_query
     chat_id = query.message.chat_id
     message_id = query.message.message_id
@@ -197,16 +214,20 @@ def complete_orders_handler(update, context, db):
         send_client_main_menu(context, chat_id, message_id)
         return 'CLIENT_MAIN_MENU'
     if query.data.isdigit():
+        order_id = query.data
+        order = get_order(order_id)
+
         user = f"user_tg_{chat_id}"
         db.set(
             user,
             json.dumps({
-                'order_id': query.data,
+                'order_id': order_id,
+                'order_complete': True,
                 'state': 'CLIENT_COMPLETE_ORDERS'
             })
         )
 
-        message_text = 'Инфо о заказе.'
+        message_text = f'{order}'
         context.bot.send_message(
             chat_id=chat_id,
             text=dedent(message_text),
@@ -231,6 +252,7 @@ def get_order_handler(update, context, db):
 
     user = f"user_tg_{chat_id}"
     order_id = json.loads(db.get(user))['order_id']
+    order_complete = json.loads(db.get(user))['order_complete']
     saved_state = json.loads(db.get(user))['state']
 
     if query and query.data == 'back':
@@ -241,7 +263,6 @@ def get_order_handler(update, context, db):
             send_complete_orders(context, chat_id, message_id)
         return saved_state
 
-    # TODO: проверка, выполнен ли заказ
     if query and query.data == 'ticket':
         message_text = 'Чтобы задать вопрос менеджеру, отправьте сообщение и мы свяжемся с Вами в ближайшее время.'
         context.bot.send_message(
@@ -260,7 +281,7 @@ def get_order_handler(update, context, db):
     send_client_answer = update.message.text
     message_text = 'Ваш вопрос исполнителю отправлен'
 
-    if 'ACTIVE' in saved_state:
+    if not order_complete:
         context.bot.send_message(
             chat_id=chat_id,
             text=dedent(f'Сообщение по заказу {order_id}: \n {send_client_answer}'),
@@ -284,12 +305,13 @@ def tariffs_handler(update, context, db):
         send_client_main_menu(context, chat_id, message_id)
         return 'CLIENT_MAIN_MENU'
     elif query.data:
+        tariff = get_tariff(query.data)
         user = f"user_tg_{chat_id}"
         db.set(user, json.dumps({'tariff_name': query.data,}))
         message_text = 'Инфо о тарифе, стоимость тарифа, для покупки нажмите "Купить"'
         context.bot.send_message(
             chat_id=chat_id,
-            text=dedent(message_text),
+            text=dedent(f'{tariff}'),
             reply_markup=get_tariff_menu()
         )
 
@@ -311,6 +333,7 @@ def tariff_handler(update, context):
     elif query.data:
         # TODO: прикручиваем оплату
         return 'PAYMENT'
+
 
 def create_ticket_handler(update, context, db):
     query = update.callback_query
