@@ -50,7 +50,7 @@ class Manager(models.Model):
     active = models.BooleanField(verbose_name='Активен', default=False, db_index=True)
 
     def __str__(self):
-        return self.user
+        return self.user.username
 
     class Meta:
         verbose_name = 'Менеджер'
@@ -64,9 +64,10 @@ class Contractor(models.Model):
         verbose_name='Пользователь',
     )
     active = models.BooleanField(verbose_name='Активен', default=False, db_index=True)
+    resume = models.TextField(verbose_name='Резюме', blank=True)
 
     def __str__(self):
-        return self.user
+        return self.user.username
 
     class Meta:
         verbose_name = 'Подрядчик'
