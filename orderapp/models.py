@@ -183,7 +183,7 @@ class Ticket(models.Model):
                               db_index=True)
     
     def __str__(self):
-        return self.id
+        return str(self.pk)
 
     class Meta:
         verbose_name = 'Обращение'

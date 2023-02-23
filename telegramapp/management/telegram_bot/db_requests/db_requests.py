@@ -91,6 +91,8 @@ def create_ticket(description, client_chat_id=None, order_id=None):
         client = Client.objects.get(user__tg_chat_id=client_chat_id)
     if order_id:
         order = Order.objects.get(id=order_id)
+    else:
+        order = None
     ticket = Ticket.objects.create(
         description=description,
         client=client,

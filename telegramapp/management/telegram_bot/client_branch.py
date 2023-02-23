@@ -19,7 +19,8 @@ from .db_requests.db_requests import (
     get_tariff,
     get_subscription_details,
     create_order,
-    add_text_to_order
+    add_text_to_order,
+    create_ticket
 )
 
 
@@ -388,7 +389,7 @@ def create_ticket_handler(update, context):
     else:
         return
 
-    saved_state = context.user_data.get('state')
+    saved_state = context.user_data.pop('state', None)
 
     if query and query.data == 'back':
         send_client_main_menu(context, chat_id, message_id)
@@ -396,6 +397,9 @@ def create_ticket_handler(update, context):
     else:
         # TODO: создать ticket
         ticket_text = update.message.text
+        order_id = context.user_data.pop('order_id', None)
+
+        ticket_id = create_ticket(ticket_text, chat_id, order_id)
         context.bot.send_message(
             chat_id=chat_id,
             text=dedent(f'Ваш вопрос менеджеру: \n {ticket_text}'),
