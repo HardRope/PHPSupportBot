@@ -42,7 +42,7 @@ def get_back_menu():
 
 def get_check_status_menu():
     inline_keyboard = [
-        [InlineKeyboardButton('Проверить статус', callback_data='checl')],
+        [InlineKeyboardButton('Проверить статус', callback_data='check')],
     ]
     inline_kb_markup = InlineKeyboardMarkup(inline_keyboard)
 
