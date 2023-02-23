@@ -32,9 +32,9 @@ def check_user_role(tg_chat_id):
         return None
     
 
-def get_or_create_user(tg_chat_id, tg_username, username):
+def get_or_create_user(tg_chat_id, tg_username, username=None):
     username = tg_username if not username else username
-    user, created = Client.objects.get_or_create(tg_chat_id=tg_chat_id,
+    user, created = Person.objects.get_or_create(tg_chat_id=tg_chat_id,
                                                  tg_username=tg_username,
                                                  username=username,
                                                  password=tg_chat_id)
@@ -42,9 +42,9 @@ def get_or_create_user(tg_chat_id, tg_username, username):
 
 
 #TODO: создание контрактора -> None
-def create_contractor(tg_chat_id, tg_username, username=None):
+def create_contractor(tg_chat_id, tg_username, resume, username=None):
     user = get_or_create_user(tg_chat_id, tg_username, username)
-    contractor, created = Contractor.objects.get_or_create(user=user)
+    contractor, created = Contractor.objects.get_or_create(user=user, resume=resume)
     return
 
 #TODO: создание клиента -> None
