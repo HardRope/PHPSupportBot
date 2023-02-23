@@ -38,18 +38,6 @@ def get_orders_menu(orders_id):
     return inline_kb_markup
 
 
-def get_complete_orders_menu():
-    #TODO: список выполненных заказов клиента -> id
-
-    inline_keyboard = [[InlineKeyboardButton(f'Заказ {id}', callback_data=id)] for id in range(3)]
-    inline_keyboard += [
-        [InlineKeyboardButton('Назад', callback_data='back')],
-    ]
-    inline_kb_markup = InlineKeyboardMarkup(inline_keyboard)
-
-    return inline_kb_markup
-
-
 def get_order_menu():
     inline_keyboard = [
         [InlineKeyboardButton('Связь с менеджером', callback_data='ticket')],
