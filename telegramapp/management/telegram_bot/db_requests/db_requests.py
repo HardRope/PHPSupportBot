@@ -149,6 +149,8 @@ def get_active_managers():
     return [manager.user.tg_chat_id for manager in Manager.objects.filter(active=True)]
 
 #TODO:
+def add_text_to_order(order_id, text):
+    pass
 
 #TODO:
 

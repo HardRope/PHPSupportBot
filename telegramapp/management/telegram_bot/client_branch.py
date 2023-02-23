@@ -9,6 +9,7 @@ from .telegram_keyboards.client_keyboards import (
     get_tariffs_menu,
     get_tariff_menu,
 )
+from .telegram_keyboards.contractor_keyboards import new_message_menu
 
 from .db_requests.db_requests import (
     get_active_orders,
@@ -16,7 +17,9 @@ from .db_requests.db_requests import (
     get_order,
     get_tariff_names,
     get_tariff,
-    get_subscription_details
+    get_subscription_details,
+    create_order,
+    add_text_to_order
 )
 
 
@@ -109,6 +112,20 @@ def send_tariffs(context, chat_id, message_id):
     )
 
 
+def send_message_to_contractor(context, order_id, chat_id, client_text, db):
+    message_text = f'Вам поступило сообщение от заказчика (Заказ №{order_id}).' \
+                   f'\nДля ответа позже перейдите в Заказ и введите сообщение.' \
+                   f'\nСообщение:' \
+                   f'\n{client_text}'
+
+    context.bot.send_message(
+        chat_id=chat_id,
+        text=dedent(message_text),
+        reply_markup=new_message_menu(order_id)
+    )
+    db.set(chat_id, 'GET_MESSAGE')
+
+
 def send_order_info(context, chat_id, message_id, order_id, order_collection, message_text=None):
     order_contractor = order_collection.get('contractor_name')
     default_text = f'''Информация по заказу №{order_id}
@@ -142,7 +159,9 @@ def client_main_menu_handler(update, context):
     message_id = query.message.message_id
 
     if query.data == 'create':
-        message_text = 'Для создания нового заказа просто отправьте сообщение с заданием.'
+        orders_left = context.user_data.get('orders_left')
+        message_text = f'Для создания нового заказа просто отправьте сообщение с заданием. ' \
+                       f'\nКоличество доступных заявок: {orders_left}'
         context.bot.send_message(
             chat_id=chat_id,
             text=dedent(message_text),
@@ -195,9 +214,11 @@ def create_order_handler(update, context):
     if query and query.data == 'back':
         send_client_main_menu(context, chat_id, message_id)
         return 'CLIENT_MAIN_MENU'
-    else:
-        # TODO: создать order
+
+    if context.user_data.get('orders_left'):
         order_text = update.message.text
+        create_order(chat_id, order_text)
+
         context.bot.send_message(
             chat_id=chat_id,
             text=dedent(f'Ваша заявка: \n {order_text}'),
@@ -208,8 +229,10 @@ def create_order_handler(update, context):
         )
 
         message_text = 'Заявка успешно создана. Вы можете проверить её в списке активных заказов'
-        send_client_main_menu(context, chat_id, message_id, message_text)
-        return 'CLIENT_MAIN_MENU'
+    else:
+        message_text = 'Невозможно создать заявку, пожалуйста, расширьте Ваш тариф.'
+    send_client_main_menu(context, chat_id, message_id, message_text)
+    return 'CLIENT_MAIN_MENU'
 
 
 def active_orders_handler(update, context):
@@ -227,8 +250,10 @@ def active_orders_handler(update, context):
         context.user_data['order_id'] = order_id
         context.user_data['order_complete'] = False
         context.user_data['state'] = 'CLIENT_ACTIVE_ORDERS'
+        context.user_data['contractor_id'] = order_collection.get('contractor_chat_id')
 
-        message_text = '\n\n Для отправки сообщения исполнителю, просто введите его в чат'
+        message_text = '\n\n Для отправки сообщения исполнителю, просто введите его в чат.' \
+                       '\nЕсли исполнитель ещё не выбран, мы добавим Ваше сообщение к тексту заявки'
         send_order_info(context, chat_id, message_id, order_id, order_collection, message_text)
         return 'CLIENT_ORDER'
 
@@ -252,7 +277,7 @@ def complete_orders_handler(update, context):
         return 'CLIENT_ORDER'
 
 
-def get_order_handler(update, context):
+def get_order_handler(update, context, db):
     query = update.callback_query
     if update.message:
         chat_id = update.message.chat_id
@@ -266,6 +291,7 @@ def get_order_handler(update, context):
     order_id = context.user_data['order_id']
     order_complete = context.user_data['order_complete']
     saved_state = context.user_data['state']
+    contractor_id = context.user_data['contractor_id']
 
     if query and query.data == 'back':
         if 'ACTIVE' in saved_state:
@@ -288,14 +314,19 @@ def get_order_handler(update, context):
         )
         return 'CREATE_TICKET'
 
-    # TODO: проверить, выполнен ли заказ, переслать вопрос исполнителю
-    send_client_answer = update.message.text
-    message_text = 'Ваш вопрос исполнителю отправлен'
+
+    client_message = update.message.text
+
+    if contractor_id:
+        send_message_to_contractor(context, order_id, contractor_id, client_message, db)
+    else:
+        add_text_to_order(order_id, client_message)
 
     if not order_complete:
+        message_text = 'Ваш вопрос исполнителю отправлен'
         context.bot.send_message(
             chat_id=chat_id,
-            text=dedent(f'Сообщение по заказу {order_id}: \n {send_client_answer}'),
+            text=dedent(f'Сообщение по заказу {order_id}: \n {client_message}'),
         )
         context.bot.delete_message(
             chat_id=chat_id,

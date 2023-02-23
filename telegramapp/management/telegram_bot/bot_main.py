@@ -69,7 +69,7 @@ def handle_users_reply(update, context, db):
         'CREATE_TICKET': create_ticket_handler,
         'CLIENT_ACTIVE_ORDERS': active_orders_handler,
         'CLIENT_COMPLETE_ORDERS': complete_orders_handler,
-        'CLIENT_ORDER': get_order_handler,
+        'CLIENT_ORDER': partial(get_order_handler, db=db),
         'TARIFFS': tariffs_handler,
         'TARIFF': tariff_handler,
 
@@ -77,7 +77,7 @@ def handle_users_reply(update, context, db):
         'PAYMENT': None,
 
         # Contractor states
-
+        'GET_MESSAGE': None,
         # Manager states
     }
 
