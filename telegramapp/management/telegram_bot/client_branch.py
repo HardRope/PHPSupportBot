@@ -12,7 +12,7 @@ from .telegram_keyboards.client_keyboards import (
 )
 
 
-def send_main_menu_message(context, chat_id, message_id, message_text=None):
+def send_client_main_menu(context, chat_id, message_id, message_text=None):
     default_text = 'Ваш тариф такой-то, заявок осталось столько-то, ещё какая-то важная инфа.'
     if message_text:
         message_text = f'{default_text} \n\n {message_text}'
@@ -138,7 +138,7 @@ def create_order_handler(update, context):
         return
 
     if query and query.data == 'back':
-        send_main_menu_message(context, chat_id, message_id)
+        send_client_main_menu(context, chat_id, message_id)
         return 'CLIENT_MAIN_MENU'
     else:
         # TODO: создать order
@@ -153,7 +153,7 @@ def create_order_handler(update, context):
         )
 
         message_text = 'Заявка успешно создана. Вы можете проверить её в списке активных заказов'
-        send_main_menu_message(context, chat_id, message_id, message_text)
+        send_client_main_menu(context, chat_id, message_id, message_text)
         return 'CLIENT_MAIN_MENU'
 
 
@@ -163,7 +163,7 @@ def active_orders_handler(update, context, db):
     message_id = query.message.message_id
 
     if query.data == 'back':
-        send_main_menu_message(context, chat_id, message_id)
+        send_client_main_menu(context, chat_id, message_id)
         return 'CLIENT_MAIN_MENU'
     if query.data.isdigit():
 
@@ -194,7 +194,7 @@ def complete_orders_handler(update, context, db):
     chat_id = query.message.chat_id
     message_id = query.message.message_id
     if query.data == 'back':
-        send_main_menu_message(context, chat_id, message_id)
+        send_client_main_menu(context, chat_id, message_id)
         return 'CLIENT_MAIN_MENU'
     if query.data.isdigit():
         user = f"user_tg_{chat_id}"
@@ -281,7 +281,7 @@ def tariffs_handler(update, context, db):
     message_id = query.message.message_id
 
     if query.data == 'back':
-        send_main_menu_message(context, chat_id, message_id)
+        send_client_main_menu(context, chat_id, message_id)
         return 'CLIENT_MAIN_MENU'
     elif query.data:
         user = f"user_tg_{chat_id}"
@@ -331,7 +331,7 @@ def create_ticket_handler(update, context, db):
         saved_state = None
 
     if query and query.data == 'back':
-        send_main_menu_message(context, chat_id, message_id)
+        send_client_main_menu(context, chat_id, message_id)
         return 'CLIENT_MAIN_MENU'
     else:
         # TODO: создать ticket
@@ -353,5 +353,5 @@ def create_ticket_handler(update, context, db):
                 send_complete_orders(context, chat_id, message_id, message_text)
             return saved_state
 
-        send_main_menu_message(context, chat_id, message_id, message_text)
+        send_client_main_menu(context, chat_id, message_id, message_text)
         return 'CLIENT_MAIN_MENU'
