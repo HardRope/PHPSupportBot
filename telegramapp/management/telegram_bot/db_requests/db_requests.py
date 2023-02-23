@@ -104,7 +104,7 @@ def get_tariff(tariff_name):
 
 #TODO: данные о подписке юзера -> None, tariff.name
 
-#TODO:
+#TODO: список tg_id активных менеджеров -> [tg_id's]
 
 #TODO:
 
