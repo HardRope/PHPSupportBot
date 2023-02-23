@@ -78,6 +78,7 @@ def get_order(order_id):
         return {
             'description': order.description,
             'estimated_at': order.estimated_at,
+            'status': order.status,
             'contractor_name': contractor_name,
             'contractor_chat_id': contractor_chat_id,
         }
