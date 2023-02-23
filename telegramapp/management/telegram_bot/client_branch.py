@@ -31,9 +31,9 @@ def send_client_main_menu(context, chat_id, message_id, message_text=None):
     else:
         context.user_data['tariff'] = None
         context.user_data['orders_left'] = 0
-        default_text = '''В данный момент у Вас нет оплаченного тарифа. 
-Для подключения перейдите в меню "Тарифы" и оплатите подходящий Вам тариф.
-Другая справочная информация.'''
+        default_text = 'В данный момент у Вас нет оплаченного тарифа.' \
+                       '\nДля подключения перейдите в меню "Тарифы" и оплатите подходящий Вам тариф.' \
+                       '\nДругая справочная информация.'
 
     if message_text:
         message_text = f'{default_text} \n\n {message_text}'
@@ -56,7 +56,7 @@ def send_active_orders(context, chat_id, message_id, message_text=None):
     active_orders = get_active_orders(chat_id)
     orders_count = len(active_orders)
 
-    default_text = f'Сейчас в работе {orders_count} заказов'
+    default_text = f'Количество заказов в работе: {orders_count}'
     if message_text:
         message_text = f'{default_text} \n\n {message_text}'
     else:
