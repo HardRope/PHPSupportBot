@@ -34,7 +34,7 @@ class Client(models.Model):
     active = models.BooleanField(verbose_name='Активен', default=False, db_index=True)
 
     def __str__(self):
-        return self.user
+        return self.user.username
 
     class Meta:
         verbose_name = 'Клиент'
