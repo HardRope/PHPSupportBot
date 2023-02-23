@@ -5,7 +5,6 @@ from .telegram_keyboards.client_keyboards import (
     get_client_main_menu,
     get_back_menu,
     get_orders_menu,
-    get_complete_orders_menu,
     get_order_menu,
     get_tariffs_menu,
     get_tariff_menu,
@@ -17,11 +16,25 @@ from .db_requests.db_requests import (
     get_order,
     get_tariff_names,
     get_tariff,
+    get_subscription_details
 )
 
 
 def send_client_main_menu(context, chat_id, message_id, message_text=None):
-    default_text = 'Ваш тариф такой-то, заявок осталось столько-то, ещё какая-то важная инфа.'
+    subscription_details = get_subscription_details(chat_id)
+    if subscription_details:
+        context.user_data['tariff'] = subscription_details.get('tariff_name')
+        context.user_data['orders_left'] = subscription_details.get('orders_left')
+        default_text = f'''Ваш тариф: {subscription_details.get('tariff_name')}.
+Осталось заявок по тарифу: {subscription_details.get('orders_left')}.
+Другая справочная информация.'''
+    else:
+        context.user_data['tariff'] = None
+        context.user_data['orders_left'] = 0
+        default_text = '''В данный момент у Вас нет оплаченного тарифа. 
+Для подключения перейдите в меню "Тарифы" и оплатите подходящий Вам тариф.
+Другая справочная информация.'''
+
     if message_text:
         message_text = f'{default_text} \n\n {message_text}'
     else:
@@ -63,8 +76,9 @@ def send_active_orders(context, chat_id, message_id, message_text=None):
 
 def send_complete_orders(context, chat_id, message_id, message_text=None):
     complete_orders = get_complete_orders(chat_id)
+    order_count = len(complete_orders)
 
-    default_text = 'Список завершённых заказов'
+    default_text = f'Список завершённых заказов. Всего заказов завершено: {order_count}'
     if message_text:
         message_text = f'{default_text} \n\n {message_text}'
     else:
@@ -88,6 +102,33 @@ def send_tariffs(context, chat_id, message_id):
         chat_id=chat_id,
         text=dedent(message_text),
         reply_markup=get_tariffs_menu(tariffs)
+    )
+    context.bot.delete_message(
+        chat_id=chat_id,
+        message_id=message_id
+    )
+
+
+def send_order_info(context, chat_id, message_id, order_id, order_collection, message_text=None):
+    order_contractor = order_collection.get('contractor_name')
+    default_text = f'''Информация по заказу №{order_id}
+Текст заявки: {order_collection.get('description')}
+Статус: {order_collection.get('status')}
+'''
+    if context.user_data['tariff'] == 'VIP':
+        default_text += f'Исполнитель: @{order_contractor}'
+    else:
+        default_text += '\nДля того, чтобы увидеть контакт исполнителя, расширьте Ваш тариф до VIP'
+
+    if message_text:
+        message_text = f'{default_text} \n\n {message_text}'
+    else:
+        message_text = default_text
+
+    context.bot.send_message(
+        chat_id=chat_id,
+        text=dedent(message_text),
+        reply_markup=get_order_menu()
     )
     context.bot.delete_message(
         chat_id=chat_id,
@@ -171,7 +212,7 @@ def create_order_handler(update, context):
         return 'CLIENT_MAIN_MENU'
 
 
-def active_order_handler(update, context, db):
+def active_orders_handler(update, context, db):
     query = update.callback_query
     chat_id = query.message.chat_id
     message_id = query.message.message_id
@@ -181,32 +222,18 @@ def active_order_handler(update, context, db):
         return 'CLIENT_MAIN_MENU'
     if query.data.isdigit():
         order_id = query.data
-        order = get_order(order_id)
+        order_collection = get_order(order_id)
 
-        user = f"user_tg_{chat_id}"
-        db.set(
-            user,
-            json.dumps({
-                'order_id': order_id,
-                'order_complete': False,
-                'state': 'CLIENT_ACTIVE_ORDERS'
-            })
-        )
+        context.user_data['order_id'] = order_id
+        context.user_data['order_complete'] = False
+        context.user_data['state'] = 'CLIENT_ACTIVE_ORDERS'
 
-        message_text = f'{order} \n\n Для отправки сообщения исполнителю, просто введите его в чат'
-        context.bot.send_message(
-            chat_id=chat_id,
-            text=dedent(message_text),
-            reply_markup=get_order_menu()
-        )
-        context.bot.delete_message(
-            chat_id=chat_id,
-            message_id=message_id
-        )
+        message_text = '\n\n Для отправки сообщения исполнителю, просто введите его в чат'
+        send_order_info(context, chat_id, message_id, order_id, order_collection, message_text)
         return 'CLIENT_ORDER'
 
 
-def complete_order_handler(update, context, db):
+def complete_orders_handler(update, context, db):
     query = update.callback_query
     chat_id = query.message.chat_id
     message_id = query.message.message_id
@@ -215,29 +242,13 @@ def complete_order_handler(update, context, db):
         return 'CLIENT_MAIN_MENU'
     if query.data.isdigit():
         order_id = query.data
-        order = get_order(order_id)
+        order_collection = get_order(order_id)
 
-        user = f"user_tg_{chat_id}"
-        db.set(
-            user,
-            json.dumps({
-                'order_id': order_id,
-                'order_complete': True,
-                'state': 'CLIENT_COMPLETE_ORDERS'
-            })
-        )
+        context.user_data['order_id'] = order_id
+        context.user_data['order_complete'] = True
+        context.user_data['state'] = 'CLIENT_COMPLETE_ORDERS'
 
-        message_text = f'{order}'
-        context.bot.send_message(
-            chat_id=chat_id,
-            text=dedent(message_text),
-            reply_markup=get_order_menu()
-        )
-
-        context.bot.delete_message(
-            chat_id=chat_id,
-            message_id=message_id
-        )
+        send_order_info(context, chat_id, message_id, order_id, order_collection)
         return 'CLIENT_ORDER'
 
 
@@ -249,14 +260,14 @@ def get_order_handler(update, context, db):
     elif query:
         chat_id = update.callback_query.message.chat_id
         message_id = update.callback_query.message.message_id
+    else:
+        return
 
-    user = f"user_tg_{chat_id}"
-    order_id = json.loads(db.get(user))['order_id']
-    order_complete = json.loads(db.get(user))['order_complete']
-    saved_state = json.loads(db.get(user))['state']
+    order_id = context.user_data['order_id']
+    order_complete = context.user_data['order_complete']
+    saved_state = context.user_data['state']
 
     if query and query.data == 'back':
-        db.getdel(user)
         if 'ACTIVE' in saved_state:
             send_active_orders(context, chat_id, message_id)
         else:
@@ -290,7 +301,6 @@ def get_order_handler(update, context, db):
             chat_id=chat_id,
             message_id=message_id - 1
         )
-        db.getdel(user)
         send_active_orders(context, chat_id, message_id, message_text)
 
         return saved_state
@@ -305,9 +315,9 @@ def tariffs_handler(update, context, db):
         send_client_main_menu(context, chat_id, message_id)
         return 'CLIENT_MAIN_MENU'
     elif query.data:
+        context.user_data['choosing_tariff'] = query.data
         tariff = get_tariff(query.data)
-        user = f"user_tg_{chat_id}"
-        db.set(user, json.dumps({'tariff_name': query.data,}))
+
         message_text = 'Инфо о тарифе, стоимость тарифа, для покупки нажмите "Купить"'
         context.bot.send_message(
             chat_id=chat_id,
@@ -331,6 +341,7 @@ def tariff_handler(update, context):
         send_tariffs(context, chat_id, message_id)
         return 'TARIFFS'
     elif query.data:
+        tariff = context.user_data['choosing_tariff']
         # TODO: прикручиваем оплату
         return 'PAYMENT'
 
@@ -346,12 +357,7 @@ def create_ticket_handler(update, context, db):
     else:
         return
 
-    try:
-        user = f"user_tg_{chat_id}"
-        saved_state = json.loads(db.get(user))['state']
-        db.getdel(user)
-    except:
-        saved_state = None
+    saved_state = context.user_data.get('state')
 
     if query and query.data == 'back':
         send_client_main_menu(context, chat_id, message_id)
