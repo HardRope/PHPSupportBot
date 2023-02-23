@@ -212,7 +212,7 @@ def create_order_handler(update, context):
         return 'CLIENT_MAIN_MENU'
 
 
-def active_orders_handler(update, context, db):
+def active_orders_handler(update, context):
     query = update.callback_query
     chat_id = query.message.chat_id
     message_id = query.message.message_id
@@ -233,7 +233,7 @@ def active_orders_handler(update, context, db):
         return 'CLIENT_ORDER'
 
 
-def complete_orders_handler(update, context, db):
+def complete_orders_handler(update, context):
     query = update.callback_query
     chat_id = query.message.chat_id
     message_id = query.message.message_id
@@ -252,7 +252,7 @@ def complete_orders_handler(update, context, db):
         return 'CLIENT_ORDER'
 
 
-def get_order_handler(update, context, db):
+def get_order_handler(update, context):
     query = update.callback_query
     if update.message:
         chat_id = update.message.chat_id
@@ -306,7 +306,7 @@ def get_order_handler(update, context, db):
         return saved_state
 
 
-def tariffs_handler(update, context, db):
+def tariffs_handler(update, context):
     query = update.callback_query
     chat_id = query.message.chat_id
     message_id = query.message.message_id
@@ -346,7 +346,7 @@ def tariff_handler(update, context):
         return 'PAYMENT'
 
 
-def create_ticket_handler(update, context, db):
+def create_ticket_handler(update, context):
     query = update.callback_query
     if update.message:
         chat_id = update.message.chat_id

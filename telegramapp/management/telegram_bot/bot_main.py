@@ -61,16 +61,16 @@ def handle_users_reply(update, context, db):
         'REQUEST_RESUME': request_contractor_resume_handler,
         'GET_RESUME': get_resume_handler,
         'CHECK_STATUS': check_status_handler,
+        'CONFIRMATION': client_confirmation_handler,
 
         # Client states
-        'CONFIRMATION': client_confirmation_handler,
         'CLIENT_MAIN_MENU': client_main_menu_handler,
         'CREATE_ORDER': create_order_handler,
-        'CREATE_TICKET': partial(create_ticket_handler, db=db),
-        'CLIENT_ACTIVE_ORDERS': partial(active_orders_handler, db=db),
-        'CLIENT_COMPLETE_ORDERS': partial(complete_orders_handler, db=db),
-        'CLIENT_ORDER': partial(get_order_handler, db=db),
-        'TARIFFS': partial(tariffs_handler, db=db),
+        'CREATE_TICKET': create_ticket_handler,
+        'CLIENT_ACTIVE_ORDERS': active_orders_handler,
+        'CLIENT_COMPLETE_ORDERS': complete_orders_handler,
+        'CLIENT_ORDER': get_order_handler,
+        'TARIFFS': tariffs_handler,
         'TARIFF': tariff_handler,
 
         # Payment states
