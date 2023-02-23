@@ -67,7 +67,7 @@ def get_active_orders(tg_chat_id):
                                  .filter(status='FIN')
     return list(finished_orders)
 
-#TODO: получение заказа по id -> json  + подгрузить tg_username исполнителя
+#TODO: получение заказа по id -> json  + подгрузить tg_id и tg_username исполнителя
 def get_order(order_id):
     try:
         order = Order.objects.get(id=order_id)
