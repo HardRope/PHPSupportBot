@@ -1,10 +1,5 @@
 from telegram import InlineKeyboardButton, InlineKeyboardMarkup
 
-from telegramapp.management.telegram_bot.db_requests.db_requests import (
-    get_active_orders,
-    get_complete_orders,
-)
-
 
 def get_client_main_menu():
     inline_keyboard = [
