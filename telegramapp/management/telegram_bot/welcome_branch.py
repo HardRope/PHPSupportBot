@@ -8,7 +8,7 @@ from .telegram_keyboards.welcome_keyboards import (
     get_check_status_menu,
     get_main_menu,
 )
-from .client_branch import send_main_menu_message
+from .client_branch import send_client_main_menu
 
 from .db_requests.db_requests import (
     is_contractor_authorized,
@@ -46,10 +46,35 @@ def send_contractor_info(context, chat_id, message_id):
     )
 
 
-def start(update, context):
-    # TODO: проверка роли пользователя
-    # TODO: создание/проверка юзера
+def get_status_response(context, chat_id, message_id, status):
+    if status:
+        # TODO: редирект в интерфейс подрядчика
+        message_text = 'Вы успешно авторизованы!'
+        context.bot.send_message(
+            chat_id=chat_id,
+            text=dedent(message_text),
+            reply_markup=get_main_menu(),
+        )
+        context.bot.delete_message(
+            chat_id=chat_id,
+            message_id=message_id
+        )
+        return 'MAIN_MENU'
+    else:
+        message_text = 'Заявка ещё находится на рассмотрении'
+        context.bot.send_message(
+            chat_id=chat_id,
+            text=dedent(message_text),
+            reply_markup=get_check_status_menu(),
+        )
+        context.bot.delete_message(
+            chat_id=chat_id,
+            message_id=message_id
+        )
+        return 'CHECK_STATUS'
 
+
+def start(update, context):
     if update.message:
         chat_id = update.message.chat_id
         message_id = update.message.message_id
@@ -60,6 +85,19 @@ def start(update, context):
         message_id=update.callback_query.message.message_id
     else:
         return
+
+    role = check_user_role(chat_id)
+    if role:
+        if role == 'client':
+            send_client_main_menu(context,chat_id, message_id)
+            return 'CLIENT_MAIN_MENU'
+        if role == 'manager':
+            #TODO: переход в интерфейс менеджера
+            pass
+        if role == 'contractor':
+            status = is_contractor_authorized(chat_id)
+            state = get_status_response(context, chat_id, message_id, status)
+            return state
 
     send_start_message(context, chat_id, message_id)
     return 'ROLE'
@@ -96,7 +134,7 @@ def client_confirmation_handler(update, context):
 
     if query.data == 'agree':
         create_client(chat_id, tg_username)
-        send_main_menu_message(context, chat_id, message_id)
+        send_client_main_menu(context, chat_id, message_id)
         return 'CLIENT_MAIN_MENU'
     elif query.data == 'back':
         send_start_message(context, chat_id, message_id)
@@ -142,7 +180,6 @@ def get_resume_handler(update, context):
         send_contractor_info(context, chat_id, message_id)
         return 'REQUEST_RESUME'
     else:
-        # TODO: создать contractor'а, отправить резюме
         contractor_resume = update.message.text
         create_contractor(chat_id, tg_username, contractor_resume)
 
@@ -160,34 +197,10 @@ def get_resume_handler(update, context):
 
 
 def check_status_handler(update, context):
-    # TODO: проверка статуса contractor'a
     query = update.callback_query
     chat_id = query.message.chat_id
     message_id = query.message.message_id
     status = is_contractor_authorized(chat_id)
 
-    if status == True:
-        message_text = 'Вы успешно авторизованы!'
-        context.bot.send_message(
-            chat_id=chat_id,
-            text=dedent(message_text),
-            reply_markup=get_main_menu(),
-        )
-        context.bot.delete_message(
-            chat_id=chat_id,
-            message_id=message_id
-        )
-        return 'MAIN_MENU'
-
-    if status == False:
-        message_text = 'Заявка ещё находится на рассмотрении'
-        context.bot.send_message(
-            chat_id=chat_id,
-            text=dedent(message_text),
-            reply_markup=get_check_status_menu(),
-        )
-        context.bot.delete_message(
-            chat_id=chat_id,
-            message_id=message_id
-        )
-        return 'CHECK_STATUS'
+    state = get_status_response(context, chat_id, message_id, status)
+    return state
