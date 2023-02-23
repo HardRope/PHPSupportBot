@@ -91,7 +91,7 @@ class Subscription(models.Model):
     created_at = models.DateTimeField(verbose_name='Дата оформления')
 
     def __str__(self):
-        return self.tariff
+        return self.tariff.name
 
     class Meta:
         verbose_name = 'Подписка'
@@ -130,10 +130,11 @@ class Order(models.Model):
     status = models.CharField(max_length=3,
                               choices=STATUS_CHOICES,
                               verbose_name='Статус',
+                              default='NEW',
                               db_index=True)
     
     def __str__(self):
-        return self.id
+        return str(self.pk)
 
     class Meta:
         verbose_name = 'Заявка'

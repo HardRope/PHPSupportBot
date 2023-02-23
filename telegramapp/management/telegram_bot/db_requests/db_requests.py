@@ -2,7 +2,7 @@ import json
 
 from django.core import serializers
 from django.core.exceptions import ObjectDoesNotExist
-from orderapp.models import Person, Contractor, Client, Manager, Order, Ticket
+from orderapp.models import Person, Contractor, Client, Manager, Order, Ticket, Subscription
 from paymentapp.models import Tariff
 
 
@@ -71,7 +71,14 @@ def get_active_orders(tg_chat_id):
 def get_order(order_id):
     try:
         order = Order.objects.get(id=order_id)
-        return serializers.serialize('json', list(order))
+        contractor_name = order.contractor.user.username if order.contractor else None
+        contractor_chat_id = order.contractor.user.tg_chat_id if order.contractor else None
+        return {
+            'description': order.description,
+            'estimated_at': order.estimated_at,
+            'contractor_name': contractor_name,
+            'contractor_chat_id': contractor_chat_id,
+        }
     except ObjectDoesNotExist:
         return None
 
@@ -96,15 +103,47 @@ def get_tariff_names():
 def get_tariff(tariff_name):
     try:
         tariff = Order.objects.get(name=tariff_name)
-        return serializers.serialize('json', list(tariff))
+        return {
+            'tariff_name': tariff.name,
+            'description': tariff.description,
+            'price': tariff.price,
+            'orders_amount': tariff.orders_amount,
+            'response_time': tariff.response_time,
+            'order_cost': tariff.order_cost,
+            'active': tariff.active,
+        }
     except ObjectDoesNotExist:
         return None
 
 #TODO: создание заказа -> result(True, False)
+def create_order(tg_chat_id, description):
+    try:
+        subscription = Subscription.objects.get(client__user__tg_chat_id=tg_chat_id)
+        order = Order.objects.create(
+            description=description,
+            subscription=subscription,
+        )
+        if not order:
+            return False
+        return True
+    except ObjectDoesNotExist:
+        return False
 
 #TODO: данные о подписке юзера -> None, tariff.name
+def get_subscription_details(tg_chat_id):
+    try:
+        subscription = Subscription.objects.get(client__user__tg_chat_id=tg_chat_id)
+        orders_left = subscription.tariff.orders_amount - subscription.orders.count()
+        return {
+            'tariff_name': subscription.tariff.name,
+            'orders_left': orders_left,
+        }
+    except ObjectDoesNotExist:
+        return False
 
 #TODO: список tg_id активных менеджеров -> [tg_id's]
+def get_active_managers():
+    return [manager.user.tg_chat_id for manager in Manager.objects.filter(active=True)]
 
 #TODO:
 
