@@ -10,6 +10,14 @@ from .telegram_keyboards.welcome_keyboards import (
 )
 from .client_branch import send_main_menu_message
 
+from .db_requests.db_requests import (
+    is_contractor_authorized,
+    check_user_role,
+    get_or_create_user,
+    create_contractor,
+    create_client
+)
+
 
 def send_start_message(context, chat_id, message_id):
     message_text = 'Добро пожаловать в PHPSupportBot'
@@ -40,10 +48,13 @@ def send_contractor_info(context, chat_id, message_id):
 
 def start(update, context):
     # TODO: проверка роли пользователя
+    # TODO: создание/проверка юзера
 
     if update.message:
-        chat_id=update.message.chat_id
-        message_id=update.message.message_id
+        chat_id = update.message.chat_id
+        message_id = update.message.message_id
+        tg_username = update.message.chat.username
+        get_or_create_user(chat_id, tg_username)
     elif update.callback_query:
         chat_id = update.callback_query.message.chat_id
         message_id=update.callback_query.message.message_id
@@ -81,8 +92,10 @@ def client_confirmation_handler(update, context):
     query = update.callback_query
     chat_id = query.message.chat_id
     message_id = query.message.message_id
+    tg_username = query.message.chat.username
 
     if query.data == 'agree':
+        create_client(chat_id, tg_username)
         send_main_menu_message(context, chat_id, message_id)
         return 'CLIENT_MAIN_MENU'
     elif query.data == 'back':
@@ -118,9 +131,12 @@ def get_resume_handler(update, context):
     if update.message:
         chat_id = update.message.chat_id
         message_id = update.message.message_id
+        tg_username = update.message.chat.username
     elif query:
         chat_id = update.callback_query.message.chat_id
         message_id = update.callback_query.message.message_id
+    else:
+        return
 
     if query and query.data == 'back':
         send_contractor_info(context, chat_id, message_id)
@@ -128,6 +144,7 @@ def get_resume_handler(update, context):
     else:
         # TODO: создать contractor'а, отправить резюме
         contractor_resume = update.message.text
+        create_contractor(chat_id, tg_username, contractor_resume)
 
         message_text = 'Ваша заявка принята, зайдите позже, чтобы проверить статус заявки'
         context.bot.send_message(
@@ -147,7 +164,7 @@ def check_status_handler(update, context):
     query = update.callback_query
     chat_id = query.message.chat_id
     message_id = query.message.message_id
-    status = False
+    status = is_contractor_authorized(chat_id)
 
     if status == True:
         message_text = 'Вы успешно авторизованы!'
