@@ -1,3 +1,6 @@
+import json
+
+from django.core import serializers
 from django.core.exceptions import ObjectDoesNotExist
 from orderapp.models import Person, Contractor, Client, Manager, Order, Ticket
 from paymentapp.models import Tariff
@@ -64,11 +67,11 @@ def get_active_orders(tg_chat_id):
                                  .filter(status='FIN')
     return list(finished_orders)
 
-#TODO: получение заказа по id -> Order.obj    + подгрузить tg_id подрядчика
+#TODO: получение заказа по id -> json  + подгрузить tg_username исполнителя
 def get_order(order_id):
     try:
         order = Order.objects.get(id=order_id)
-        return order
+        return serializers.serialize('json', list(order))
     except ObjectDoesNotExist:
         return None
 
@@ -89,11 +92,11 @@ def create_ticket(description, client_chat_id=None, order_id=None):
 def get_tariff_names():
     return [tariff.name for tariff in Tariff.objects.all()]
 
-#TODO: инфо о тарифе -> Tariff.obj
+#TODO: инфо о тарифе -> json
 def get_tariff(tariff_name):
     try:
         tariff = Order.objects.get(name=tariff_name)
-        return tariff
+        return serializers.serialize('json', list(tariff))
     except ObjectDoesNotExist:
         return None
 
