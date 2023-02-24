@@ -18,7 +18,7 @@ class Person(User):
     )
 
     def __str__(self):
-        return self.tg_username
+        return self.tg_chat_id
 
     class Meta:
         verbose_name = 'Пользователь'
