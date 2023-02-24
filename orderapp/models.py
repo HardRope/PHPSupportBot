@@ -106,6 +106,7 @@ class Order(models.Model):
         ('OVE', 'Просрочен')
     ]
     description = models.TextField(verbose_name='Описание', blank=True)
+    credentials = models.TextField(verbose_name='Данные для админки', blank=True)
     contractor = models.ForeignKey(
         Contractor,
         on_delete=models.SET_NULL,
