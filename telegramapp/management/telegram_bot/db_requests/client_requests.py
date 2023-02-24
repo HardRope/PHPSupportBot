@@ -1,57 +1,6 @@
-import json
-
-from django.core import serializers
 from django.core.exceptions import ObjectDoesNotExist
 from orderapp.models import Person, Contractor, Client, Manager, Order, Ticket, Subscription
 from paymentapp.models import Tariff
-
-
-#TODO: проверка статуса контрактора (авторизован/неавторизован) -> True, False
-def is_contractor_authorized(tg_chat_id):
-    try:
-        contractor = Contractor.objects.get(user__tg_chat_id=tg_chat_id)
-        if not contractor.active:
-            return False
-        return True
-    except ObjectDoesNotExist:
-        return False
-
-#TODO: проверка роли пользователя (менеджер, контрактор, клиент) -> str
-def check_user_role(tg_chat_id):
-    try:
-        user = Person.objects.get(tg_chat_id=tg_chat_id)
-        if hasattr(user, 'client'):
-            return 'client'
-        elif hasattr(user, 'manager'):
-            return 'manager'
-        elif hasattr(user, 'contractor'):
-            return 'contractor'
-        else:
-            return None
-    except ObjectDoesNotExist:
-        return None
-    
-
-def get_or_create_user(tg_chat_id, tg_username, username=None):
-    username = tg_username if not username else username
-    user, created = Person.objects.get_or_create(tg_chat_id=tg_chat_id,
-                                                 tg_username=tg_username,
-                                                 username=username,
-                                                 password=tg_chat_id)
-    return user
-
-
-#TODO: создание контрактора -> None
-def create_contractor(tg_chat_id, tg_username, resume, username=None):
-    user = get_or_create_user(tg_chat_id, tg_username, username)
-    contractor, created = Contractor.objects.get_or_create(user=user, resume=resume)
-    return
-
-#TODO: создание клиента -> None
-def create_client(tg_chat_id, tg_username, username=None):
-    user = get_or_create_user(tg_chat_id, tg_username, username)
-    client, created = Client.objects.get_or_create(user=user)
-    return
 
 #TODO: список активных заказов клиента -> [id's]
 def get_active_orders(tg_chat_id):
@@ -61,6 +10,7 @@ def get_active_orders(tg_chat_id):
     active_orders_id = [order.id for order in active_orders]
     return active_orders_id
 
+
 #TODO: список выполненных заказов клиента -> [id's]
 def get_complete_orders(tg_chat_id):
     client = Client.objects.get(user__tg_chat_id=tg_chat_id)
@@ -68,6 +18,7 @@ def get_complete_orders(tg_chat_id):
                                  .filter(status='FIN')
     finished_orders_id = [order.id for order in finished_orders]
     return finished_orders_id
+
 
 #TODO: получение заказа по id -> json  + подгрузить tg_id и tg_username исполнителя
 def get_order(order_id):
@@ -85,6 +36,7 @@ def get_order(order_id):
     except ObjectDoesNotExist:
         return None
 
+
 #TODO: создание тикета -> None
 def create_ticket(description, client_chat_id=None, order_id=None):
     if client_chat_id:
@@ -99,6 +51,7 @@ def create_ticket(description, client_chat_id=None, order_id=None):
         order=order,
     )
     return ticket.id
+
 
 #TODO: список тарифов -> [name's]
 def get_tariff_names():
@@ -153,9 +106,3 @@ def get_active_managers():
 #TODO:
 def add_text_to_order(order_id, text):
     pass
-
-#TODO:
-
-#TODO:
-
-#TODO:

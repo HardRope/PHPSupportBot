@@ -10,7 +10,7 @@ from .telegram_keyboards.welcome_keyboards import (
 )
 from .client_branch import send_client_main_menu
 
-from .db_requests.db_requests import (
+from .db_requests.welcome_db_requests import (
     is_contractor_authorized,
     check_user_role,
     get_or_create_user,

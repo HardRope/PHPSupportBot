@@ -11,7 +11,7 @@ from .telegram_keyboards.client_keyboards import (
 )
 from .telegram_keyboards.contractor_keyboards import new_message_menu
 from .telegram_keyboards.manager_keyboards import new_ticket_menu
-from .db_requests.db_requests import (
+from .db_requests.client_requests import (
     get_active_orders,
     get_complete_orders,
     get_order,
