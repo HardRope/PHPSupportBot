@@ -357,10 +357,14 @@ def tariffs_handler(update, context):
         context.user_data['choosing_tariff'] = query.data
         tariff = get_tariff(query.data)
 
-        message_text = 'Инфо о тарифе, стоимость тарифа, для покупки нажмите "Купить"'
+        message_text = f'Название тарифа: {tariff.get("tariff_name")}' \
+                       f'\nОписание тарифа:\n{tariff.get("description")}' \
+                       f'\nСтоимость: {tariff.get("price")} руб.' \
+                       f'\nКоличество заказов в тарифе: {tariff.get("orders_amount")} шт.' \
+                       f'\nВремя ответа на заявку: {tariff.get("response_time")} ч.'
         context.bot.send_message(
             chat_id=chat_id,
-            text=dedent(f'{tariff}'),
+            text=dedent(message_text),
             reply_markup=get_tariff_menu()
         )
 
