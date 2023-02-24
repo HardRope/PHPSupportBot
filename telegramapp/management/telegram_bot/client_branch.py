@@ -10,7 +10,7 @@ from .telegram_keyboards.client_keyboards import (
     get_tariff_menu,
 )
 from .telegram_keyboards.contractor_keyboards import new_message_menu
-
+from .telegram_keyboards.manager_keyboards import new_ticket_menu
 from .db_requests.db_requests import (
     get_active_orders,
     get_complete_orders,
@@ -20,7 +20,8 @@ from .db_requests.db_requests import (
     get_subscription_details,
     create_order,
     add_text_to_order,
-    create_ticket
+    create_ticket,
+    get_active_managers,
 )
 
 
@@ -127,13 +128,23 @@ def send_message_to_contractor(context, order_id, chat_id, client_text, db):
     db.set(chat_id, 'GET_MESSAGE')
 
 
+def send_message_to_manager(context, chat_id, ticket_id):
+    message_text = f'Новая заявка от клиента'
+
+    context.bot.send_message(
+        chat_id=chat_id,
+        text=dedent(message_text),
+        reply_markup=new_ticket_menu(ticket_id)
+    )
+
+
 def send_order_info(context, chat_id, message_id, order_id, order_collection, message_text=None):
     order_contractor = order_collection.get('contractor_name')
     default_text = f'''Информация по заказу №{order_id}
 Текст заявки: {order_collection.get('description')}
 Статус: {order_collection.get('status')}
 '''
-    if context.user_data['tariff'] == 'VIP':
+    if context.user_data.get('tariff') == 'VIP':
         default_text += f'Исполнитель: @{order_contractor}'
     else:
         default_text += '\nДля того, чтобы увидеть контакт исполнителя, расширьте Ваш тариф до VIP'
@@ -147,10 +158,6 @@ def send_order_info(context, chat_id, message_id, order_id, order_collection, me
         chat_id=chat_id,
         text=dedent(message_text),
         reply_markup=get_order_menu()
-    )
-    context.bot.delete_message(
-        chat_id=chat_id,
-        message_id=message_id
     )
 
 
@@ -289,10 +296,10 @@ def get_order_handler(update, context, db):
     else:
         return
 
-    order_id = context.user_data['order_id']
-    order_complete = context.user_data['order_complete']
-    saved_state = context.user_data['state']
-    contractor_id = context.user_data['contractor_id']
+    order_id = context.user_data.pop('order_id')
+    order_complete = context.user_data.pop('order_complete')
+    saved_state = context.user_data.pop('state')
+    contractor_id = context.user_data.pop('contractor_id')
 
     if query and query.data == 'back':
         if 'ACTIVE' in saved_state:
@@ -389,17 +396,19 @@ def create_ticket_handler(update, context):
     else:
         return
 
-    saved_state = context.user_data.pop('state', None)
-
     if query and query.data == 'back':
         send_client_main_menu(context, chat_id, message_id)
         return 'CLIENT_MAIN_MENU'
     else:
-        # TODO: создать ticket
         ticket_text = update.message.text
         order_id = context.user_data.pop('order_id', None)
+        saved_state = context.user_data.pop('state', None)
 
         ticket_id = create_ticket(ticket_text, chat_id, order_id)
+        managers = get_active_managers()
+        for manager in managers:
+            send_message_to_manager(context, manager, ticket_id)
+
         context.bot.send_message(
             chat_id=chat_id,
             text=dedent(f'Ваш вопрос менеджеру: \n {ticket_text}'),
