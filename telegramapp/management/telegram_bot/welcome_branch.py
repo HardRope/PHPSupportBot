@@ -48,18 +48,21 @@ def send_contractor_info(context, chat_id, message_id):
 
 def get_status_response(context, chat_id, message_id, status):
     if status:
-        # TODO: редирект в интерфейс подрядчика
-        message_text = 'Вы успешно авторизованы!'
-        context.bot.send_message(
-            chat_id=chat_id,
-            text=dedent(message_text),
-            reply_markup=get_main_menu(),
-        )
-        context.bot.delete_message(
-            chat_id=chat_id,
-            message_id=message_id
-        )
-        return 'MAIN_MENU'
+        # TODO: заменить на меню и стейт подрядчика
+        send_client_main_menu(context, chat_id, message_id)
+        return 'CLIENT_MAIN_MENU'
+
+        # message_text = 'Вы успешно авторизованы!'
+        # context.bot.send_message(
+        #     chat_id=chat_id,
+        #     text=dedent(message_text),
+        #     reply_markup=get_main_menu(),
+        # )
+        # context.bot.delete_message(
+        #     chat_id=chat_id,
+        #     message_id=message_id
+        # )
+        # return 'MAIN_MENU'
     else:
         message_text = 'Заявка ещё находится на рассмотрении'
         context.bot.send_message(
