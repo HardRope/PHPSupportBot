@@ -1,0 +1,62 @@
+{% extends "admin/change_list.html" %}
+{% load humanize %}
+{% load percent %}
+
+{% block content_title %}
+    <h1> Статистика по заявкам </h1>
+{% endblock %}
+
+{% block result_list %}
+<div class="results">
+    <table>
+    <thead>
+      <tr>
+        <th>
+          <div class="text">
+            <a href="#">Клиент</a>
+          </div>
+        </th>
+        <th>
+          <div class="text">
+            <a href="#">Всего</a>
+          </div>
+        </th>
+        <th>
+          <div class="text">
+            <a href="#">Всего продано на сумму</a>
+          </div>
+        </th>
+        <th>
+          <div class="text">
+            <a href="#">
+              <strong>% от всех продаж</strong>
+            </a>
+          </div>
+        </th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for row in summary %}
+      <tr class="{% cycle 'row1' 'row2' %}">
+        <td> {{ row.subscription__client__user__tg_chat_id }} </td>
+        <td> {{ row.total }} </td>
+        <td> {{ row.total_sales | default:0 }} руб </td>
+        <td>
+          <strong>
+          {{ row.total_sales | default:0 | percentof:summary_total.total_sales }}
+          </strong>
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+    <tr style="font-weight:bold; border-top:2px solid #DDDDDD;">
+        <td> Итого </td>
+        <td> {{ summary_total.total }} </td>
+        <td> {{ summary_total.total_sales | default:0 }} руб </td>
+        <td> 100% </td>
+    </tr>
+  </table>
+</div>
+{% endblock %}
+
+{% block pagination %}{% endblock %}

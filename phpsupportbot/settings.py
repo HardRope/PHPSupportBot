@@ -47,6 +47,8 @@ INSTALLED_APPS = [
     'orderapp',
     'paymentapp',
     'telegramapp.apps.TelegramappConfig',
+    'django.contrib.humanize',
+    'statisticapp',
 ]
 
 MIDDLEWARE = [
