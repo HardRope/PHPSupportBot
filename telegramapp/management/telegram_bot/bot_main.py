@@ -16,9 +16,6 @@ from .welcome_branch import (
     start,
     confirm_role_handler,
     client_confirmation_handler,
-    request_contractor_resume_handler,
-    get_resume_handler,
-    check_status_handler,
 )
 
 from .client_branch import (
@@ -31,6 +28,8 @@ from .client_branch import (
     tariffs_handler,
     tariff_handler,
 )
+
+from . import contractors
 
 logger = logging.getLogger(__name__)
 
@@ -58,9 +57,6 @@ def handle_users_reply(update, context, db):
         # Welcome states
         'START': start,
         'ROLE': confirm_role_handler,
-        'REQUEST_RESUME': request_contractor_resume_handler,
-        'GET_RESUME': get_resume_handler,
-        'CHECK_STATUS': check_status_handler,
         'CONFIRMATION': client_confirmation_handler,
 
         # Client states
@@ -77,7 +73,23 @@ def handle_users_reply(update, context, db):
         'PAYMENT': None,
 
         # Contractor states
+        contractors.State.ACCOUNT_ON_REVIEW.value: contractors.handlers.check_access,
+        contractors.State.RESUME_REQUEST.value: contractors.handlers.process_resume,
+        contractors.State.HOME.value: contractors.handlers.home_actions,
+
+        contractors.State.AVAILABLE_ORDERS.value: contractors.handlers.available_orders_actions,
+        contractors.State.AVAILABLE_ORDER_DETAIL.value: contractors.handlers.available_order_detail_actions,
+        contractors.State.TIME_ESTIMATE_REQUEST.value: contractors.handlers.process_time_estimate,
+
+        contractors.State.ORDERS.value: contractors.handlers.orders_actions,
+        contractors.State.ORDER_DETAIL.value: contractors.handlers.order_detail_actions,
+        contractors.State.ORDER_REPORT_REQUEST.value: contractors.handlers.process_order_report,
+        contractors.State.ORDER_COMPLETE_CONFIRMATION.value: contractors.handlers.order_complete_confirmation_actions,
+
+        contractors.State.STATISTICS.value: contractors.handlers.stats_actions,
+
         'GET_MESSAGE': None,
+
         # Manager states
     }
 
