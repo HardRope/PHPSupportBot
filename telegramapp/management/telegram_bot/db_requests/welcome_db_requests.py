@@ -2,17 +2,6 @@ from django.core.exceptions import ObjectDoesNotExist
 from orderapp.models import Person, Contractor, Client, Manager, Order, Ticket, Subscription
 
 
-#TODO: проверка статуса контрактора (авторизован/неавторизован) -> True, False
-def is_contractor_authorized(tg_chat_id):
-    try:
-        contractor = Contractor.objects.get(user__tg_chat_id=tg_chat_id)
-        if not contractor.active:
-            return False
-        return True
-    except ObjectDoesNotExist:
-        return False
-
-
 #TODO: проверка роли пользователя (менеджер, контрактор, клиент) -> str
 def check_user_role(tg_chat_id):
     try:
@@ -37,12 +26,6 @@ def get_or_create_user(tg_chat_id, tg_username, username=None):
                                                  password=tg_chat_id)
     return user
 
-
-#TODO: создание контрактора -> None
-def create_contractor(tg_chat_id, tg_username, resume, username=None):
-    user = get_or_create_user(tg_chat_id, tg_username, username)
-    contractor, created = Contractor.objects.get_or_create(user=user, resume=resume)
-    return
 
 
 #TODO: создание клиента -> None
