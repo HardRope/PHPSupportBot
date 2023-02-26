@@ -1,6 +1,6 @@
 from .state import ContractorState as State
 
-from . import api, send
+from . import db, send
 
 
 def check_access(update, context):
