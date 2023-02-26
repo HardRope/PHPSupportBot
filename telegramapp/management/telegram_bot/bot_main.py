@@ -69,6 +69,8 @@ def handle_users_reply(update, context, db):
         'TARIFFS': tariffs_handler,
         'TARIFF': tariff_handler,
 
+        'NEW_MESSAGE_TO_CLIENT': None,  # TODO
+
         # Payment states
         'PAYMENT': None,
 
@@ -88,7 +90,7 @@ def handle_users_reply(update, context, db):
 
         contractors.State.STATISTICS.value: contractors.handlers.stats_actions,
 
-        'GET_MESSAGE': None,
+        contractors.State.INCOMING_MESSAGE.value: contractors.handlers.incoming_message_actions,
 
         # Manager states
     }

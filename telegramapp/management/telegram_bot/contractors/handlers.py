@@ -148,20 +148,34 @@ def orders_actions(update, context):
 
 def order_detail_actions(update, context):
     query = update.callback_query
-    chat_id = query.message.chat_id
-    message_id = query.message.message_id
+    if update.message:
+        chat_id = update.message.chat_id
+        message_id = update.message.message_id
+        # TODO get order from context or idk
+        order_id = 7  # Example taken order
+        client_chat_id = 7  # TODO: get from db
+        text = update.message.text
+        from telegramapp.management.telegram_bot.client_branch import send_message_to_client
+        send_message_to_client(context, order_id, chat_id, text, None)  # TODO pass DB
+        send.order_detail_private(context, chat_id, order_id, message_id)
+        return State.ORDER_DETAIL.value
 
-    if query.data.startswith("complete_"):
-        order_id = query.data[
-            9:
-        ]  # TODO может быть лучше передать через redis или context
-        send.order_report_request(context, chat_id, order_id, message_id)
-        return State.ORDER_REPORT_REQUEST.value
 
-    if query.data == "back":
-        orders = [1, 2, 3]  # TODO implement and use get_available_orders(chat_id)
-        send.orders(context, chat_id, message_id)
-        return State.ORDERS.value
+    elif query:
+        chat_id = update.callback_query.message.chat_id
+        message_id = update.callback_query.message.message_id
+
+        if query.data.startswith("complete_"):
+            order_id = query.data[
+                9:
+            ]  # TODO может быть лучше передать через redis или context
+            send.order_report_request(context, chat_id, order_id, message_id)
+            return State.ORDER_REPORT_REQUEST.value
+
+        if query.data == "back":
+            orders = [1, 2, 3]  # TODO implement and use get_available_orders(chat_id)
+            send.orders(context, chat_id, message_id)
+            return State.ORDERS.value
 
 
 def process_order_report(update, context):
@@ -201,5 +215,21 @@ def order_complete_confirmation_actions(update, context):
 
     if query.data == "no":
         order_id = 7
+        send.order_detail_private(context, chat_id, order_id, message_id)
+        return State.ORDER_DETAIL.value
+
+
+def incoming_message_actions(update, context):
+    query = update.callback_query
+    chat_id = query.message.chat_id
+    message_id = query.message.message_id
+
+    if query.data == "read":
+        send.home(context, chat_id)
+        return State.HOME.value
+
+    if query.data.isdigit():
+        order_id = query.data
+        # TODO: set current order in redis or context?
         send.order_detail_private(context, chat_id, order_id, message_id)
         return State.ORDER_DETAIL.value
