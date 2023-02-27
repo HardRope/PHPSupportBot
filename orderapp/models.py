@@ -92,6 +92,7 @@ class Subscription(models.Model):
         verbose_name='Дата оформления',
         auto_now_add=True,
     )
+    active = models.BooleanField(verbose_name='Активен', default=True, db_index=True)
 
     def __str__(self):
         return self.tariff.name

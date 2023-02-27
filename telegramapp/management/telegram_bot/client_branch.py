@@ -40,6 +40,7 @@ def send_client_main_menu(context, chat_id, message_id, message_text=None):
         context.user_data['orders_left'] = subscription_details.get('orders_left')
         default_text = f'''Ваш тариф: {subscription_details.get('tariff_name')}.
 Осталось заявок по тарифу: {subscription_details.get('orders_left')}.
+Дней до конца подписки: {subscription_details.get('time_left')}
 Другая справочная информация.'''
     else:
         context.user_data['tariff'] = None
