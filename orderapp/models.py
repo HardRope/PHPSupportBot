@@ -18,7 +18,7 @@ class Person(User):
     )
 
     def __str__(self):
-        return self.tg_username
+        return str(self.tg_username)
 
     class Meta:
         verbose_name = 'Пользователь'
@@ -34,7 +34,7 @@ class Client(models.Model):
     active = models.BooleanField(verbose_name='Активен', default=False, db_index=True)
 
     def __str__(self):
-        return self.user.tg_username
+        return str(self.user.tg_username)
 
     class Meta:
         verbose_name = 'Клиент'
@@ -50,7 +50,7 @@ class Manager(models.Model):
     active = models.BooleanField(verbose_name='Активен', default=False, db_index=True)
 
     def __str__(self):
-        return self.user.tg_username
+        return str(self.user.tg_username)
 
     class Meta:
         verbose_name = 'Менеджер'
@@ -67,7 +67,7 @@ class Contractor(models.Model):
     resume = models.TextField(verbose_name='Резюме', blank=True)
 
     def __str__(self):
-        return self.user.tg_username
+        return str(self.user.tg_username)
 
     class Meta:
         verbose_name = 'Подрядчик'
