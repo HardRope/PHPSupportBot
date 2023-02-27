@@ -109,7 +109,7 @@ def get_active_managers():
 def add_text_to_order(order_id, text):
     try:
         order = Order.objects.get(pk=order_id)
-        order.description = text
+        order.description = f'{order.description}\n{text}'
         order.save()
         return True
     except ObjectDoesNotExist:
