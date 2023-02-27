@@ -88,7 +88,10 @@ class Subscription(models.Model):
         verbose_name='Тариф',
         null=True,
     )
-    created_at = models.DateTimeField(verbose_name='Дата оформления')
+    created_at = models.DateTimeField(
+        verbose_name='Дата оформления',
+        auto_now_add=True,
+    )
 
     def __str__(self):
         return self.tariff.name

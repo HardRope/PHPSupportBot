@@ -28,6 +28,7 @@ def get_order(order_id):
         contractor_chat_id = order.contractor.user.tg_chat_id if order.contractor else None
         return {
             'description': order.description,
+            'credentials': order.credentials,
             'estimated_at': order.estimated_at,
             'status': order.get_status_display(),
             'contractor_name': contractor_name,
@@ -74,12 +75,13 @@ def get_tariff(tariff_name):
         return None
 
 #TODO: создание заказа -> result(True, False)
-def create_order(tg_chat_id, description):
+def create_order(tg_chat_id, description, credentials):
     try:
         subscription = Subscription.objects.get(client__user__tg_chat_id=tg_chat_id)
         order = Order.objects.create(
             description=description,
             subscription=subscription,
+            credentials=credentials,
         )
         if not order:
             return False
@@ -109,6 +111,20 @@ def add_text_to_order(order_id, text):
         order = Order.objects.get(pk=order_id)
         order.description = text
         order.save()
+        return True
+    except ObjectDoesNotExist:
+        return False
+
+
+def buy_tariff(client_chat_id, tariff_name):
+    # TODO: проверка активной подписки, False, если есть и ниже грейдом
+    try:
+        client = Client.objects.get(user__tg_chat_id=client_chat_id)
+        tariff = Tariff.objects.get(name=tariff_name)
+        new_subscription = Subscription.objects.create(
+            client=client,
+            tariff=tariff,
+        )
         return True
     except ObjectDoesNotExist:
         return False

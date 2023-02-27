@@ -20,13 +20,14 @@ from .welcome_branch import (
 
 from .client_branch import (
     client_main_menu_handler,
-    create_order_handler,
+    get_task_handler,
     create_ticket_handler,
     active_orders_handler,
     complete_orders_handler,
     get_order_handler,
     tariffs_handler,
     tariff_handler,
+    get_credentials_handler
 )
 
 from . import contractors
@@ -61,7 +62,8 @@ def handle_users_reply(update, context, db):
 
         # Client states
         'CLIENT_MAIN_MENU': client_main_menu_handler,
-        'CREATE_ORDER': create_order_handler,
+        'GET_TASK': get_task_handler,
+        'GET_CREDENTIALS': get_credentials_handler,
         'CREATE_TICKET': create_ticket_handler,
         'CLIENT_ACTIVE_ORDERS': active_orders_handler,
         'CLIENT_COMPLETE_ORDERS': complete_orders_handler,

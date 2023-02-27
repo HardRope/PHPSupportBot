@@ -1,4 +1,3 @@
-import json
 from textwrap import dedent
 
 from .telegram_keyboards.client_keyboards import (
@@ -21,6 +20,7 @@ from .db_requests.client_requests import (
     add_text_to_order,
     create_ticket,
     get_active_managers,
+    buy_tariff,
 )
 
 from . import contractors
@@ -103,7 +103,7 @@ def send_complete_orders(context, chat_id, message_id, message_text=None):
 
 def send_tariffs(context, chat_id, message_id):
     tariffs = get_tariff_names()
-    message_text = 'Доступные тарифы, Ваш тариф, инфо о тарифах, для покупки - выберите тариф.'
+    message_text = 'Доступные тарифы, выберите тариф для просмотра информации и покупки.'
     context.bot.send_message(
         chat_id=chat_id,
         text=dedent(message_text),
@@ -155,12 +155,17 @@ def send_message_to_manager(context, chat_id, ticket_id):
 
 def send_order_info(context, chat_id, message_id, order_id, order_collection, message_text=None):
     order_contractor = order_collection.get('contractor_name')
+    if order_contractor:
+        order_contractor = f'@{order_contractor}'
+    else:
+        order_contractor = 'Не выбран'
     default_text = f'''Информация по заказу №{order_id}
 Текст заявки: {order_collection.get('description')}
+Данные доступа: {order_collection.get('credentials')}
 Статус: {order_collection.get('status')}
 '''
     if context.user_data.get('tariff') == 'VIP':
-        default_text += f'Исполнитель: @{order_contractor}'
+        default_text += f'Исполнитель: {order_contractor}'
     else:
         default_text += '\nДля того, чтобы увидеть контакт исполнителя, расширьте Ваш тариф до VIP'
 
@@ -195,7 +200,7 @@ def client_main_menu_handler(update, context):
             chat_id=chat_id,
             message_id=message_id
         )
-        return 'CREATE_ORDER'
+        return 'GET_TASK'
 
     if query.data == 'active':
         send_active_orders(context, chat_id, message_id)
@@ -223,7 +228,7 @@ def client_main_menu_handler(update, context):
         return 'CREATE_TICKET'
 
 
-def create_order_handler(update, context):
+def get_task_handler(update, context):
     query = update.callback_query
     if update.message:
         chat_id = update.message.chat_id
@@ -240,22 +245,53 @@ def create_order_handler(update, context):
 
     if context.user_data.get('orders_left'):
         order_text = update.message.text
-        create_order(chat_id, order_text)
+        context.user_data['new_order'] = order_text
 
         context.bot.send_message(
             chat_id=chat_id,
-            text=dedent(f'Ваша заявка: \n {order_text}'),
+            text=dedent(f'Введите данные для доступа к сайту'),
+            reply_markup=get_back_menu()
         )
         context.bot.delete_message(
             chat_id=chat_id,
             message_id=message_id - 1
         )
-
-        message_text = 'Заявка успешно создана. Вы можете проверить её в списке активных заказов'
+        return 'GET_CREDENTIALS'
     else:
         message_text = 'Невозможно создать заявку, пожалуйста, расширьте Ваш тариф.'
-    send_client_main_menu(context, chat_id, message_id, message_text)
-    return 'CLIENT_MAIN_MENU'
+        send_client_main_menu(context, chat_id, message_id, message_text)
+        return 'CLIENT_MAIN_MENU'
+
+
+def get_credentials_handler(update, context):
+    query = update.callback_query
+    if update.message:
+        chat_id = update.message.chat_id
+        message_id = update.message.message_id
+    elif query:
+        chat_id = update.callback_query.message.chat_id
+        message_id = update.callback_query.message.message_id
+    else:
+        return
+
+    if query and query.data == 'back':
+        orders_left = context.user_data.get('orders_left')
+        message_text = f'Для создания нового заказа просто отправьте сообщение с заданием. ' \
+                       f'\nКоличество доступных заявок: {orders_left}'
+        context.bot.send_message(
+            chat_id=chat_id,
+            text=dedent(message_text),
+            reply_markup=get_back_menu()
+        )
+        return 'GET_TASK'
+    else:
+        order_text = context.user_data.pop('new_order')
+        credentials = update.message.text
+        create_order(chat_id, order_text, credentials)
+
+        message_text = 'Заявка успешно создана. Вы можете проверить её в списке активных заказов.'
+        send_client_main_menu(context, chat_id, message_id, message_text)
+        return 'CLIENT_MAIN_MENU'
 
 
 def active_orders_handler(update, context):
@@ -400,8 +436,13 @@ def tariff_handler(update, context):
         return 'TARIFFS'
     elif query.data:
         tariff = context.user_data['choosing_tariff']
-        # TODO: прикручиваем оплату
-        return 'PAYMENT'
+
+        if buy_tariff(chat_id, tariff):
+            message_text = f'Вы оплатили тариф {tariff}. Приятного пользования нашим сервисом. '
+        else:
+            message_text = 'Произошла ошибка. Свяжитесь с менеджером для уточнения деталей.'
+        send_client_main_menu(context, chat_id, message_id, message_text)
+        return 'CLIENT_MAIN_MENU'
 
 
 def create_ticket_handler(update, context):
