@@ -19,7 +19,7 @@ class Person(User):
     )
 
     def __str__(self):
-        return self.tg_chat_id
+        return str(self.tg_username)
 
     class Meta:
         verbose_name = 'Пользователь'
@@ -35,7 +35,7 @@ class Client(models.Model):
     active = models.BooleanField(verbose_name='Активен', default=False, db_index=True)
 
     def __str__(self):
-        return self.user.username
+        return str(self.user.tg_username)
 
     class Meta:
         verbose_name = 'Клиент'
@@ -51,7 +51,7 @@ class Manager(models.Model):
     active = models.BooleanField(verbose_name='Активен', default=False, db_index=True)
 
     def __str__(self):
-        return self.user.username
+        return str(self.user.tg_username)
 
     class Meta:
         verbose_name = 'Менеджер'
@@ -68,11 +68,12 @@ class Contractor(models.Model):
     resume = models.TextField(verbose_name='Резюме', blank=True)
 
     def __str__(self):
-        return self.user.username
+        return str(self.user.tg_username)
     
     @property
     def chat_id(self):
         return self.user.tg_chat_id
+
 
     class Meta:
         verbose_name = 'Подрядчик'
@@ -105,6 +106,7 @@ class Subscription(models.Model):
         verbose_name='Дата оформления',
         auto_now_add=True,
     )
+    active = models.BooleanField(verbose_name='Активен', default=True, db_index=True)
 
     def __str__(self):
         return self.tariff.name
@@ -205,3 +207,35 @@ class Ticket(models.Model):
     class Meta:
         verbose_name = 'Обращение'
         verbose_name_plural = 'Обращения'
+
+
+class Messages(models.Model):
+    contractor = models.ForeignKey(
+        Contractor,
+        on_delete=models.CASCADE,
+        related_name='messages',
+        verbose_name='Исполнитель',
+    )
+
+    client = models.ForeignKey(
+        Client,
+        on_delete=models.CASCADE,
+        related_name='messages',
+        verbose_name='Заказчик',
+    )
+
+    order = models.ForeignKey(
+        Order,
+        on_delete=models.CASCADE,
+        related_name='messages',
+        verbose_name='К заказу',
+    )
+
+    text = models.TextField(verbose_name='Текст сообщения')
+
+    def __str__(self):
+        return str(self.pk)
+
+    class Meta:
+        verbose_name = 'Сообщение'
+        verbose_name_plural = 'Сообщения'

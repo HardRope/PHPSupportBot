@@ -1,5 +1,8 @@
+import datetime
+import pytz
+from dateutil.relativedelta import relativedelta
 from django.core.exceptions import ObjectDoesNotExist
-from orderapp.models import Person, Contractor, Client, Manager, Order, Ticket, Subscription
+from orderapp.models import Person, Contractor, Client, Manager, Order, Ticket, Subscription, Messages
 from paymentapp.models import Tariff
 
 #TODO: список активных заказов клиента -> [id's]
@@ -94,12 +97,30 @@ def get_subscription_details(tg_chat_id):
     try:
         subscription = Subscription.objects.get(client__user__tg_chat_id=tg_chat_id)
         orders_left = subscription.tariff.orders_amount - subscription.orders.count()
+        time = check_subscription_time(subscription)
+        if not time:
+            subscription.active = False
+            subscription.save()
+            return False
         return {
             'tariff_name': subscription.tariff.name,
             'orders_left': orders_left,
+            'time_left': time,
         }
     except ObjectDoesNotExist:
         return False
+
+
+def check_subscription_time(subscription):
+    utc = pytz.UTC
+    created_at = subscription.created_at.replace(tzinfo=utc)
+    today = datetime.datetime.now().replace(tzinfo=utc)
+    deltatime = relativedelta(created_at, today)
+    if deltatime.days > 30:
+        return False
+    return 30 - deltatime.days
+
+
 
 #TODO: список tg_id активных менеджеров -> [tg_id's]
 def get_active_managers():
@@ -109,7 +130,7 @@ def get_active_managers():
 def add_text_to_order(order_id, text):
     try:
         order = Order.objects.get(pk=order_id)
-        order.description = text
+        order.description = f'{order.description}\n{text}'
         order.save()
         return True
     except ObjectDoesNotExist:
@@ -128,3 +149,27 @@ def buy_tariff(client_chat_id, tariff_name):
         return True
     except ObjectDoesNotExist:
         return False
+
+
+def get_order_messages(client_chat_id, order_id):
+    client = Client.objects.get(user__tg_chat_id=client_chat_id)
+    order = Order.objects.get(id=order_id)
+    try:
+        order_messages = Messages.objects.filter(client=client, order=order)
+        messages = [message.text for message in order_messages]
+        text = '\n'.join(messages)
+    except ObjectDoesNotExist:
+        text = 'Тут пока ничего нет'
+    return text
+
+
+def create_order_message(client_chat_id, contractor_chat_id, order_id, text):
+    client = Client.objects.get(user__tg_chat_id=client_chat_id)
+    order = Order.objects.get(id=order_id)
+    contractor = Contractor.objects.get(user__tg_chat_id=contractor_chat_id)
+    Messages.objects.create(
+        client=client,
+        contractor=contractor,
+        order=order,
+        text=text,
+    )

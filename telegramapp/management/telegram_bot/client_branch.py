@@ -1,4 +1,7 @@
+import logging
 from textwrap import dedent
+
+from telegram import LabeledPrice, InlineKeyboardButton, InlineKeyboardMarkup
 
 from .telegram_keyboards.client_keyboards import (
     get_client_main_menu,
@@ -21,10 +24,14 @@ from .db_requests.client_requests import (
     create_ticket,
     get_active_managers,
     buy_tariff,
+    get_order_messages,
+    create_order_message
 )
 
 from . import contractors
 
+
+logger = logging.getLogger(__name__)
 
 def send_client_main_menu(context, chat_id, message_id, message_text=None):
     subscription_details = get_subscription_details(chat_id)
@@ -33,6 +40,7 @@ def send_client_main_menu(context, chat_id, message_id, message_text=None):
         context.user_data['orders_left'] = subscription_details.get('orders_left')
         default_text = f'''Ваш тариф: {subscription_details.get('tariff_name')}.
 Осталось заявок по тарифу: {subscription_details.get('orders_left')}.
+Дней до конца подписки: {subscription_details.get('time_left')}
 Другая справочная информация.'''
     else:
         context.user_data['tariff'] = None
@@ -51,7 +59,7 @@ def send_client_main_menu(context, chat_id, message_id, message_text=None):
         text=dedent(message_text),
         reply_markup=get_client_main_menu()
     )
-
+    print('message_id', message_id)
     context.bot.delete_message(
         chat_id=chat_id,
         message_id=message_id
@@ -347,18 +355,29 @@ def get_order_handler(update, context, db):
     else:
         return
 
-    order_id = context.user_data.pop('order_id')
-    order_complete = context.user_data.pop('order_complete')
-    saved_state = context.user_data.pop('state')
-    contractor_id = context.user_data.pop('contractor_id')
+    order_id = context.user_data.get('order_id')
+    order_complete = context.user_data.get('order_complete')
+    saved_state = context.user_data.get('state')
+    contractor_id = context.user_data.get('contractor_id')
 
     if query and query.data == 'back':
+        context.user_data.pop('order_id')
+        context.user_data.pop('order_complete')
+        context.user_data.pop('state')
+        context.user_data.pop('contractor_id')
         if 'ACTIVE' in saved_state:
             send_active_orders(context, chat_id, message_id)
         else:
             send_complete_orders(context, chat_id, message_id)
         return saved_state
-
+    if query and query.data == 'messages':
+        messages = get_order_messages(chat_id, order_id)
+        context.bot.send_message(
+            chat_id=chat_id,
+            text=dedent(f'История последних сообщений с исполнителем: \n {messages}'),
+            reply_markup=get_back_menu()
+        )
+        return 'CLIENT_MESSAGES'
     if query and query.data == 'ticket':
         message_text = 'Чтобы задать вопрос менеджеру, отправьте сообщение и мы свяжемся с Вами в ближайшее время.'
         context.bot.send_message(
@@ -373,27 +392,45 @@ def get_order_handler(update, context, db):
         )
         return 'CREATE_TICKET'
 
+    if update.message.text:
+        client_message = update.message.text
 
-    client_message = update.message.text
+        if contractor_id:
+            send_message_to_contractor(context, order_id, contractor_id, client_message, db)
+            create_order_message(chat_id, contractor_id, order_id, client_message)
+        else:
+            add_text_to_order(order_id, client_message)
 
-    if contractor_id:
-        send_message_to_contractor(context, order_id, contractor_id, client_message, db)
+        if not order_complete:
+            message_text = 'Ваш вопрос исполнителю отправлен'
+            context.bot.send_message(
+                chat_id=chat_id,
+                text=dedent(f'Сообщение по заказу {order_id}: \n {client_message}'),
+            )
+            context.bot.delete_message(
+                chat_id=chat_id,
+                message_id=message_id
+            )
+            send_active_orders(context, chat_id, message_id, message_text)
+
+            return saved_state
+
+
+def client_messages_handler(update, context):
+    query = update.callback_query
+    if update.message:
+        chat_id = update.message.chat_id
+        message_id = update.message.message_id
+    elif query:
+        chat_id = update.callback_query.message.chat_id
+        message_id = update.callback_query.message.message_id
     else:
-        add_text_to_order(order_id, client_message)
-
-    if not order_complete:
-        message_text = 'Ваш вопрос исполнителю отправлен'
-        context.bot.send_message(
-            chat_id=chat_id,
-            text=dedent(f'Сообщение по заказу {order_id}: \n {client_message}'),
-        )
-        context.bot.delete_message(
-            chat_id=chat_id,
-            message_id=message_id - 1
-        )
-        send_active_orders(context, chat_id, message_id, message_text)
-
-        return saved_state
+        return
+    context.bot.delete_message(
+        chat_id=chat_id,
+        message_id=message_id
+    )
+    return 'CLIENT_ORDER'
 
 
 def tariffs_handler(update, context):
@@ -405,44 +442,34 @@ def tariffs_handler(update, context):
         send_client_main_menu(context, chat_id, message_id)
         return 'CLIENT_MAIN_MENU'
     elif query.data:
-        context.user_data['choosing_tariff'] = query.data
-        tariff = get_tariff(query.data)
+        tariff_name = query.data
+        tariff = get_tariff(tariff_name)
+        context.user_data['choosing_tariff'] = tariff
 
-        message_text = f'Название тарифа: {tariff.get("tariff_name")}' \
-                       f'\nОписание тарифа:\n{tariff.get("description")}' \
-                       f'\nСтоимость: {tariff.get("price")} руб.' \
-                       f'\nКоличество заказов в тарифе: {tariff.get("orders_amount")} шт.' \
-                       f'\nВремя ответа на заявку: {tariff.get("response_time")} ч.'
-        context.bot.send_message(
+        title = f'Оплата подписки по тарифу {tariff.get("tariff_name")}'
+        description = f'{tariff.get("description")}' \
+                      f'\nКоличество заказов в тарифе: {tariff.get("orders_amount")} шт.' \
+                      f'\nВремя ответа на заявку: {tariff.get("response_time")} ч.'
+        payload = 'Custom-Payload'
+        provider_token = context.bot_data['payment_token']
+        currency = 'RUB'
+        prices = [LabeledPrice("Стоимость", tariff.get("price") * 100)]
+
+        context.bot.send_invoice(
             chat_id=chat_id,
-            text=dedent(message_text),
-            reply_markup=get_tariff_menu()
+            title=title,
+            description=description,
+            payload=payload,
+            provider_token=provider_token,
+            currency=currency,
+            prices=prices,
+            reply_markup=get_tariff_menu(),
         )
-
         context.bot.delete_message(
             chat_id=chat_id,
             message_id=message_id
         )
-        return 'TARIFF'
-
-
-def tariff_handler(update, context):
-    query = update.callback_query
-    chat_id = query.message.chat_id
-    message_id = query.message.message_id
-
-    if query.data == 'back':
-        send_tariffs(context, chat_id, message_id)
-        return 'TARIFFS'
-    elif query.data:
-        tariff = context.user_data['choosing_tariff']
-
-        if buy_tariff(chat_id, tariff):
-            message_text = f'Вы оплатили тариф {tariff}. Приятного пользования нашим сервисом. '
-        else:
-            message_text = 'Произошла ошибка. Свяжитесь с менеджером для уточнения деталей.'
-        send_client_main_menu(context, chat_id, message_id, message_text)
-        return 'CLIENT_MAIN_MENU'
+        return 'PAYMENT'
 
 
 def create_ticket_handler(update, context, db):
