@@ -30,6 +30,14 @@ from .client_branch import (
     get_credentials_handler
 )
 
+from .manager_branch import (
+    manager_main_menu_handler,
+    active_tickets_handler,
+    ticket_handler,
+    active_orders_handler,
+    free_contractors_handler,
+    contractor_contact_handler,
+)
 from . import contractors
 
 logger = logging.getLogger(__name__)
@@ -95,6 +103,12 @@ def handle_users_reply(update, context, db):
         contractors.State.INCOMING_MESSAGE.value: contractors.handlers.incoming_message_actions,
 
         # Manager states
+        'MANAGER_MAIN_MENU': manager_main_menu_handler,
+        'ACTIVE_TICKETS': active_tickets_handler,
+        'TICKET_HANDLER': ticket_handler,
+        'ACTIVE_ORDERS': active_orders_handler,
+        'FREE_CONTRACTORS': free_contractors_handler,
+        'CONTRACTOR_HANDLER': contractor_contact_handler,
     }
 
     print(user_state)                                                   # отладочный принт

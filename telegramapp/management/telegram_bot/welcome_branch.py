@@ -7,7 +7,7 @@ from .telegram_keyboards.welcome_keyboards import (
     get_check_status_menu,
 )
 from .client_branch import send_client_main_menu
-
+from .manager_branch import send_manager_main_menu
 from .db_requests.welcome_db_requests import (
     check_user_role,
     get_or_create_user,
@@ -49,8 +49,8 @@ def start(update, context):
             send_client_main_menu(context, chat_id, message_id)
             return 'CLIENT_MAIN_MENU'
         if role == 'manager':
-            #TODO: переход в интерфейс менеджера
-            pass
+            send_manager_main_menu(context, chat_id, message_id)
+            return 'MANAGER_MAIN_MENU'
         if role == 'contractor':
             return contractors.entrypoint_with_role(context, chat_id, message_id)
 
