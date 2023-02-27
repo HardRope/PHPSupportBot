@@ -59,7 +59,10 @@ def get_client_chat_id_by_order(order_id):
     client = order.subscription.client
     return client.user.tg_chat_id
 
-def save_report(order_id, text):
+def close_order(order_id, text):
     order = Order.objects.get(id=order_id)
+
+    order.status = "FIN"
+    order.finished_at = datetime.now()
     order.description = order.description + f"\n\nОтчет:\n{text}"
     order.save()

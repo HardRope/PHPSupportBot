@@ -50,12 +50,12 @@ def incoming_message(order_id: int):
     )
 
 
-def available_orders(order_ids):
+def available_orders(orders):
     """
     Assuming orders == [1,2,3]
     """
     return _create_keyboard(
-        {order.id: f"Новый заказ #{order.id}" for order in order_ids}, with_back=True
+        {order.id: f"Новый заказ #{order.id}" for order in orders}, with_back=True
     )
 
 
@@ -71,7 +71,7 @@ def available_order_actions(order_id):
     )
 
 
-def orders(order_ids):
+def orders(orders):
     """
     Assuming orders == [1,2,3]
     """

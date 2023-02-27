@@ -120,7 +120,7 @@ def process_time_estimate(update, context, db):
             context, chat_id, order_id, message_id, with_keyboard=False
         )
         storage.take_order(order_id, chat_id, time_estimate_days)
-        db.set(f"{chat_id}_is_taking", None)  # TODO мб удалить?
+        db.getdel(f"{chat_id}_is_taking")
         
         send.home(context, chat_id)
         return State.HOME.value
@@ -176,7 +176,7 @@ def order_detail_actions(update, context, db):
 
         if query.data == "back":
             orders = storage.get_orders(chat_id)
-            db.set(f"{chat_id}_is_viewing", None)
+            db.getdel(f"{chat_id}_is_viewing")
             send.orders(context, chat_id, message_id, orders)
             return State.ORDERS.value
 
@@ -211,8 +211,8 @@ def order_complete_confirmation_actions(update, context, db):
         order_id = db.get(f"{chat_id}_is_viewing")
         
         report_text = db.get(f"{chat_id}_is_writing_report")
-        storage.save_report(order_id, report_text)
-        db.set(f"{chat_id}_is_writing_report", None)
+        storage.close_order(order_id, report_text)
+        db.getdel(f"{chat_id}_is_writing_report")
 
         send.order_completed(context, chat_id, order_id, message_id)
         send.home(context, chat_id)
@@ -221,7 +221,7 @@ def order_complete_confirmation_actions(update, context, db):
     if query.data == "no":
         order_id = 7
         send.order_detail_full(context, chat_id, order_id, message_id)
-        db.set(f"{chat_id}_is_writing_report", None)
+        db.getdel(f"{chat_id}_is_writing_report")
         return State.ORDER_DETAIL.value
 
 
