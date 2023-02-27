@@ -1,6 +1,7 @@
 import logging
 
 from .client_branch import send_tariffs, send_client_main_menu
+from .db_requests.payments_requests import create_subscription
 
 
 logger = logging.getLogger(__name__)
@@ -19,7 +20,7 @@ def payment_handler(update, context):
         return 'PAYMENT'
     else:
         successful_payment_callback(update, context)
-        return 'TARIFFS'
+        return 'CLIENT_MAIN_MENU'
 
 
 def precheckout_callback(update, context):
@@ -37,8 +38,10 @@ def successful_payment_callback(update, context):
     user = update.message.from_user
     message_id = update.message.message_id
     logger.info("User %s made a payment for %s rubles", user.first_name, tariff.get("price"))
-    chat_id = user.id
+    is_subscription_created = create_subscription(user.id, tariff.get('tariff_name'))
 
-    message_text = f'Вы оплатили тариф {tariff.get("name")}. Приятного пользования нашим сервисом. '
-    send_client_main_menu(context, chat_id, message_id, message_text)
-    return 'CLIENT_MAIN_MENU'
+    message_text = f'Вы оплатили тариф {tariff.get("tariff_name")}. Приятного пользования нашим сервисом. '
+    if not is_subscription_created:
+        message_text = 'Что-то пошло не так. Обратитесь к администратору'
+
+    send_client_main_menu(context, user.id, message_id, message_text)
