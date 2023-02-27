@@ -37,6 +37,7 @@ from .manager_branch import (
     active_orders_handler,
     free_contractors_handler,
     contractor_contact_handler,
+
 )
 from . import contractors
 
@@ -109,6 +110,7 @@ def handle_users_reply(update, context, db):
         'ACTIVE_ORDERS': active_orders_handler,
         'FREE_CONTRACTORS': free_contractors_handler,
         'CONTRACTOR_HANDLER': contractor_contact_handler,
+        # 'MANAGER_TICKETS': manager_tickets_handler,
     }
 
     print(user_state)                                                   # отладочный принт

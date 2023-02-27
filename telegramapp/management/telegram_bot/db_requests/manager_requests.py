@@ -75,3 +75,11 @@ def get_contractor(tg_chat_id):
     #TODO: контакт исполнителя -> username
     contractor = Contractor.objects.get(user__tg_chat_id=tg_chat_id)
     return contractor.user.username
+
+
+def get_manager_tickets(tg_chat_id):
+    #TODO: тикеты менеджера -> [id's]
+    manager = Manager.objects.get(user__tg_chat_id=tg_chat_id)
+    tickets = Ticket.objects.filter(manager=manager)
+    tickets_id = [ticket.id for ticket in tickets]
+    return tickets_id

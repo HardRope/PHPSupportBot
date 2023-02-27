@@ -22,6 +22,7 @@ def new_ticket_menu(ticket_id):
 def manager_main_menu():
     inline_keyboard = [
         [InlineKeyboardButton('Необработанные тикеты', callback_data='tickets')],
+        [InlineKeyboardButton('Мои заявки', callback_data='manager_tickets')],
         [InlineKeyboardButton('Активные заказы', callback_data='orders')],
         [InlineKeyboardButton('Свободные исполнители', callback_data='contractors')],
     ]
@@ -30,7 +31,7 @@ def manager_main_menu():
     return inline_kb_markup
 
 
-def active_tickets_menu(tickets):
+def tickets_menu(tickets):
     inline_keyboard = [[InlineKeyboardButton(f'Заявка №{id}', callback_data=id)] for id in tickets]
     inline_keyboard += [
         [InlineKeyboardButton('Назад', callback_data='back')],

@@ -3,10 +3,10 @@ from textwrap import dedent
 from .telegram_keyboards.manager_keyboards import (
     manager_main_menu,
     get_back_menu,
-    active_tickets_menu,
+    tickets_menu,
     ticket_menu,
     active_orders_menu,
-    free_contractors_menu
+    free_contractors_menu,
 )
 from .db_requests.manager_requests import (
     get_active_tickets,
@@ -16,6 +16,7 @@ from .db_requests.manager_requests import (
     get_order,
     get_contractors,
     get_contractor,
+    get_manager_tickets,
 
 )
 
@@ -56,11 +57,15 @@ def send_ticket_info(context, chat_id, message_id, ticket_collection):
 Заказ {order}
 Клиент: {client}
 Исполнитель: {contractor}'''
+    if context.user_data.get('claimed', None):
+        reply_markup = get_back_menu()
+    else:
+        reply_markup = ticket_menu(ticket_id)
 
     context.bot.send_message(
         chat_id=chat_id,
         text=dedent(message_text),
-        reply_markup=ticket_menu(ticket_id)
+        reply_markup=reply_markup
     )
     context.bot.delete_message(
         chat_id=chat_id,
@@ -128,6 +133,20 @@ def send_free_contractors(context, chat_id, message_id):
     )
 
 
+def send_manager_tickets(context, chat_id, message_id):
+    message_text = 'Принятые заявки.'
+    tickets = get_manager_tickets(chat_id)
+    context.bot.send_message(
+        chat_id=chat_id,
+        text=dedent(message_text),
+        reply_markup=tickets_menu(tickets=tickets)
+    )
+    context.bot.delete_message(
+        chat_id=chat_id,
+        message_id=message_id
+    )
+
+
 def manager_main_menu_handler(update, context):
     query = update.callback_query
     if update.message:
@@ -145,12 +164,13 @@ def manager_main_menu_handler(update, context):
         context.bot.send_message(
             chat_id=chat_id,
             text=dedent(message_text),
-            reply_markup=active_tickets_menu(tickets=tickets)
+            reply_markup=tickets_menu(tickets=tickets)
         )
         context.bot.delete_message(
             chat_id=chat_id,
             message_id=message_id
         )
+        context.user_data['claimed'] = False
         return 'ACTIVE_TICKETS'
     if query.data == 'orders':
         send_active_orders(context, chat_id, message_id)
@@ -158,8 +178,10 @@ def manager_main_menu_handler(update, context):
     if query.data == 'contractors':
         send_free_contractors(context, chat_id, message_id)
         return 'FREE_CONTRACTORS'
-    # if query.data == 'text':
-    #     pass
+    if query.data == 'manager_tickets':
+        send_manager_tickets(context, chat_id, message_id)
+        context.user_data['claimed'] = True
+        return 'ACTIVE_TICKETS'
 
 
 def active_tickets_handler(update, context):
@@ -182,8 +204,21 @@ def ticket_handler(update, context):
     chat_id = query.message.chat_id
     message_id = query.message.message_id
     if query.data == 'back':
-        send_manager_main_menu(context, chat_id, message_id)
-        return 'MANAGER_MAIN_MENU'
+        if context.user_data.get('claimed', None):
+            send_manager_tickets(context, chat_id, message_id)
+        else:
+            message_text = 'Необработанные заявки.'
+            tickets = get_active_tickets()
+            context.bot.send_message(
+                chat_id=chat_id,
+                text=dedent(message_text),
+                reply_markup=tickets_menu(tickets=tickets)
+            )
+            context.bot.delete_message(
+                chat_id=chat_id,
+                message_id=message_id
+            )
+        return 'ACTIVE_TICKETS'
     else:
         ticket_id = query.data
         if claim_ticket(chat_id, ticket_id):
@@ -239,6 +274,7 @@ def free_contractors_handler(update, context):
             message_id=message_id
         )
         return 'CONTRACTOR_HANDLER'
+
 
 def contractor_contact_handler(update, context):
     query = update.callback_query
