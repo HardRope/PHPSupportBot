@@ -1,4 +1,5 @@
 from django.contrib import admin
+from django.contrib import messages
 
 from orderapp.models import Person, Client, Manager, Contractor, Subscription, Order, Ticket, Messages
 from paymentapp.models import Tariff
@@ -22,6 +23,22 @@ class ManagerAdmin(admin.ModelAdmin):
 @admin.register(Contractor)
 class ContractorAdmin(admin.ModelAdmin):
     list_display = ['user', 'active']
+    
+    actions = ("activate", "deactivate")
+
+
+    @admin.action(description="Активиировать")
+    def activate(self, request, contractors):
+        for contractor in contractors:
+            contractor.activate()
+            messages.add_message(request, messages.SUCCESS, f"Подрядчик {contractor} активирован.")
+
+
+    @admin.action(description="Деактивировать")
+    def deactivate(self, request, contractors):
+        for contractor in contractors:
+            contractor.deactivate()
+            messages.add_message(request, messages.SUCCESS, f"Подрядчик {contractor} деактивирован.")
 
 
 @admin.register(Subscription)

@@ -3,8 +3,6 @@ from textwrap import dedent
 from .telegram_keyboards.welcome_keyboards import (
     get_role_choosing_menu,
     get_client_agreement_menu,
-    get_back_menu,
-    get_check_status_menu,
 )
 from .client_branch import send_client_main_menu
 from .manager_branch import send_manager_main_menu
