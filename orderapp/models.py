@@ -192,3 +192,35 @@ class Ticket(models.Model):
     class Meta:
         verbose_name = 'Обращение'
         verbose_name_plural = 'Обращения'
+
+
+class Messages(models.Model):
+    contractor = models.ForeignKey(
+        Contractor,
+        on_delete=models.CASCADE,
+        related_name='messages',
+        verbose_name='Исполнитель',
+    )
+
+    client = models.ForeignKey(
+        Client,
+        on_delete=models.CASCADE,
+        related_name='messages',
+        verbose_name='Заказчик',
+    )
+
+    order = models.ForeignKey(
+        Order,
+        on_delete=models.CASCADE,
+        related_name='messages',
+        verbose_name='К заказу',
+    )
+
+    text = models.TextField(verbose_name='Текст сообщения')
+
+    def __str__(self):
+        return str(self.pk)
+
+    class Meta:
+        verbose_name = 'Сообщение'
+        verbose_name_plural = 'Сообщения'

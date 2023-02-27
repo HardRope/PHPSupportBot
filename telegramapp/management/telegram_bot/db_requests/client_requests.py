@@ -1,5 +1,5 @@
 from django.core.exceptions import ObjectDoesNotExist
-from orderapp.models import Person, Contractor, Client, Manager, Order, Ticket, Subscription
+from orderapp.models import Person, Contractor, Client, Manager, Order, Ticket, Subscription, Messages
 from paymentapp.models import Tariff
 
 #TODO: список активных заказов клиента -> [id's]
@@ -128,3 +128,27 @@ def buy_tariff(client_chat_id, tariff_name):
         return True
     except ObjectDoesNotExist:
         return False
+
+
+def get_order_messages(client_chat_id, order_id):
+    client = Client.objects.get(user__tg_chat_id=client_chat_id)
+    order = Order.objects.get(id=order_id)
+    try:
+        order_messages = Messages.objects.filter(client=client, order=order)
+        messages = [message.text for message in order_messages]
+        text = '\n'.join(messages)
+    except ObjectDoesNotExist:
+        text = 'Тут пока ничего нет'
+    return text
+
+
+def create_order_message(client_chat_id, contractor_chat_id, order_id, text):
+    client = Client.objects.get(user__tg_chat_id=client_chat_id)
+    order = Order.objects.get(id=order_id)
+    contractor = Contractor.objects.get(user__tg_chat_id=contractor_chat_id)
+    Messages.objects.create(
+        client=client,
+        contractor=contractor,
+        order=order,
+        text=text,
+    )

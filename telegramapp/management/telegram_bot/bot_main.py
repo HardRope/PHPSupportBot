@@ -27,7 +27,8 @@ from .client_branch import (
     get_order_handler,
     tariffs_handler,
     tariff_handler,
-    get_credentials_handler
+    get_credentials_handler,
+    client_messages_handler
 )
 
 from .manager_branch import (
@@ -77,6 +78,7 @@ def handle_users_reply(update, context, db):
         'CLIENT_ACTIVE_ORDERS': active_orders_handler,
         'CLIENT_COMPLETE_ORDERS': complete_orders_handler,
         'CLIENT_ORDER': partial(get_order_handler, db=db),
+        'CLIENT_MESSAGES': client_messages_handler,
         'TARIFFS': tariffs_handler,
         'TARIFF': tariff_handler,
 

@@ -21,6 +21,8 @@ from .db_requests.client_requests import (
     create_ticket,
     get_active_managers,
     buy_tariff,
+    get_order_messages,
+    create_order_message
 )
 
 from . import contractors
@@ -347,18 +349,29 @@ def get_order_handler(update, context, db):
     else:
         return
 
-    order_id = context.user_data.pop('order_id')
-    order_complete = context.user_data.pop('order_complete')
-    saved_state = context.user_data.pop('state')
-    contractor_id = context.user_data.pop('contractor_id')
+    order_id = context.user_data.get('order_id')
+    order_complete = context.user_data.get('order_complete')
+    saved_state = context.user_data.get('state')
+    contractor_id = context.user_data.get('contractor_id')
 
     if query and query.data == 'back':
+        context.user_data.pop('order_id')
+        context.user_data.pop('order_complete')
+        context.user_data.pop('state')
+        context.user_data.pop('contractor_id')
         if 'ACTIVE' in saved_state:
             send_active_orders(context, chat_id, message_id)
         else:
             send_complete_orders(context, chat_id, message_id)
         return saved_state
-
+    if query and query.data == 'messages':
+        messages = get_order_messages(chat_id, order_id)
+        context.bot.send_message(
+            chat_id=chat_id,
+            text=dedent(f'История последних сообщений с исполнителем: \n {messages}'),
+            reply_markup=get_back_menu()
+        )
+        return 'CLIENT_MESSAGES'
     if query and query.data == 'ticket':
         message_text = 'Чтобы задать вопрос менеджеру, отправьте сообщение и мы свяжемся с Вами в ближайшее время.'
         context.bot.send_message(
@@ -373,27 +386,45 @@ def get_order_handler(update, context, db):
         )
         return 'CREATE_TICKET'
 
+    if update.message.text:
+        client_message = update.message.text
 
-    client_message = update.message.text
+        if contractor_id:
+            send_message_to_contractor(context, order_id, contractor_id, client_message, db)
+            create_order_message(chat_id, contractor_id, order_id, client_message)
+        else:
+            add_text_to_order(order_id, client_message)
 
-    if contractor_id:
-        send_message_to_contractor(context, order_id, contractor_id, client_message, db)
+        if not order_complete:
+            message_text = 'Ваш вопрос исполнителю отправлен'
+            context.bot.send_message(
+                chat_id=chat_id,
+                text=dedent(f'Сообщение по заказу {order_id}: \n {client_message}'),
+            )
+            context.bot.delete_message(
+                chat_id=chat_id,
+                message_id=message_id
+            )
+            send_active_orders(context, chat_id, message_id, message_text)
+
+            return saved_state
+
+
+def client_messages_handler(update, context):
+    query = update.callback_query
+    if update.message:
+        chat_id = update.message.chat_id
+        message_id = update.message.message_id
+    elif query:
+        chat_id = update.callback_query.message.chat_id
+        message_id = update.callback_query.message.message_id
     else:
-        add_text_to_order(order_id, client_message)
-
-    if not order_complete:
-        message_text = 'Ваш вопрос исполнителю отправлен'
-        context.bot.send_message(
-            chat_id=chat_id,
-            text=dedent(f'Сообщение по заказу {order_id}: \n {client_message}'),
-        )
-        context.bot.delete_message(
-            chat_id=chat_id,
-            message_id=message_id - 1
-        )
-        send_active_orders(context, chat_id, message_id, message_text)
-
-        return saved_state
+        return
+    context.bot.delete_message(
+        chat_id=chat_id,
+        message_id=message_id
+    )
+    return 'CLIENT_ORDER'
 
 
 def tariffs_handler(update, context):
