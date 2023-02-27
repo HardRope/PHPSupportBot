@@ -84,11 +84,13 @@ def orders(context, chat_id, prev_message_id, orders):
     )
 
 
-def stats(context, chat_id, prev_message_id):
+def stats(context, chat_id, prev_message_id, stats):
     if prev_message_id:
         context.bot.delete_message(chat_id=chat_id, message_id=prev_message_id)
 
     text = "You are breathtaking"
+
+    text = f"Выполнено заказов: {stats['orders_completed']}\nЗаработано: {stats['money_earned']}"
 
     context.bot.send_message(
         chat_id=chat_id,

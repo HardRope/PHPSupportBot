@@ -50,7 +50,6 @@ logger = logging.getLogger(__name__)
 
 def error(state, error):
     logger.warning(f'State {state} caused error {error}')
-    raise
 
 
 def handle_users_reply(update, context, db):

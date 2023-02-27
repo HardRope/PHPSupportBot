@@ -66,3 +66,16 @@ def close_order(order_id, text):
     order.finished_at = datetime.now()
     order.description = order.description + f"\n\nОтчет:\n{text}"
     order.save()
+
+
+def get_statistics(chat_id):
+    contractor = Contractor.objects.get(user__tg_chat_id=chat_id)
+    completed_orders = Order.objects.filter(status="FIN", contractor=contractor)
+    money_earned = 0
+    for order in completed_orders:
+        money_earned += order.subscription.tariff.order_cost
+
+    return {
+        "orders_completed": completed_orders.count(),
+        "money_earned": money_earned,
+    }
