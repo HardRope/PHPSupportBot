@@ -6,7 +6,7 @@ from telegramapp.management.telegram_bot.db_requests.welcome_db_requests import 
 )
 
 # TODO: проверка статуса контрактора (авторизован/неавторизован) -> True, False
-def is_authorized(tg_chat_id):
+def is_active(tg_chat_id):
     try:
         contractor = Contractor.objects.get(user__tg_chat_id=tg_chat_id)
         if not contractor.active:
@@ -20,4 +20,3 @@ def is_authorized(tg_chat_id):
 def create_contractor(tg_chat_id, tg_username, resume, username=None):
     user = get_or_create_user(tg_chat_id, tg_username, username)
     contractor, created = Contractor.objects.get_or_create(user=user, resume=resume)
-    return
