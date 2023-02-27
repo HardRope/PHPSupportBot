@@ -111,6 +111,13 @@ class Order(models.Model):
     ]
     description = models.TextField(verbose_name='Описание', blank=True)
     credentials = models.TextField(verbose_name='Данные для админки', blank=True)
+    client = models.ForeignKey(
+        Client,
+        on_delete=models.SET_NULL,
+        related_name='orders',
+        verbose_name='Заказчик',
+        null=True,
+    )
     contractor = models.ForeignKey(
         Contractor,
         on_delete=models.SET_NULL,
@@ -121,9 +128,10 @@ class Order(models.Model):
     )
     subscription = models.ForeignKey(
         Subscription,
-        on_delete=models.CASCADE,
+        on_delete=models.SET_NULL,
         related_name='orders',
         verbose_name='Подписка',
+        null=True,
     )
     created_at = models.DateTimeField(verbose_name='Создана', auto_now=True)
     estimated_at = models.DateTimeField(verbose_name='Истекает',

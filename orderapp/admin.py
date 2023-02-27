@@ -31,7 +31,7 @@ class SubscriptionAdmin(admin.ModelAdmin):
 
 @admin.register(Order)
 class OrderAdmin(admin.ModelAdmin):
-    list_display = ['id', 'contractor', 'status', 'created_at']
+    list_display = ['id', 'client', 'contractor', 'status', 'created_at']
 
 
 @admin.register(Ticket)
