@@ -171,7 +171,7 @@ def manager_main_menu_handler(update, context):
             message_id=message_id
         )
         context.user_data['claimed'] = False
-        return 'ACTIVE_TICKETS'
+        return 'TICKETS'
     if query.data == 'orders':
         send_active_orders(context, chat_id, message_id)
         return 'ACTIVE_ORDERS'
@@ -181,10 +181,16 @@ def manager_main_menu_handler(update, context):
     if query.data == 'manager_tickets':
         send_manager_tickets(context, chat_id, message_id)
         context.user_data['claimed'] = True
-        return 'ACTIVE_TICKETS'
+        return 'TICKETS'
+    if str(query.data).isdigit():
+        context.user_data['claimed'] = False
+        ticket_id = query.data
+        ticket_collection = get_ticket(ticket_id)
+        send_ticket_info(context, chat_id, message_id, ticket_collection)
+        return 'TICKET_HANDLER'
 
 
-def active_tickets_handler(update, context):
+def tickets_handler(update, context):
     query = update.callback_query
     chat_id = query.message.chat_id
     message_id = query.message.message_id
@@ -192,11 +198,14 @@ def active_tickets_handler(update, context):
     if query.data == 'back':
         send_manager_main_menu(context, chat_id, message_id)
         return 'MANAGER_MAIN_MENU'
-    else:
+    elif str(query.data).isdigit():
         ticket_id = query.data
         ticket_collection = get_ticket(ticket_id)
         send_ticket_info(context, chat_id, message_id, ticket_collection)
         return 'TICKET_HANDLER'
+    else:
+        send_manager_main_menu(context, chat_id, message_id)
+        return 'MANAGER_MAIN_MENU'
 
 
 def ticket_handler(update, context):
@@ -218,8 +227,8 @@ def ticket_handler(update, context):
                 chat_id=chat_id,
                 message_id=message_id
             )
-        return 'ACTIVE_TICKETS'
-    else:
+        return 'TICKETS'
+    elif str(query.data).isdigit():
         ticket_id = query.data
         if claim_ticket(chat_id, ticket_id):
             message_text = f'Вы взяли заявку {ticket_id}'
@@ -227,9 +236,12 @@ def ticket_handler(update, context):
             message_text = 'Не получилось взять заявку.'
         send_manager_main_menu(context, chat_id, message_id, message_text)
         return 'MANAGER_MAIN_MENU'
+    else:
+        send_manager_main_menu(context, chat_id, message_id)
+        return 'MANAGER_MAIN_MENU'
 
 
-def active_orders_handler(update, context):
+def manager_orders_handler(update, context):
     query = update.callback_query
     chat_id = query.message.chat_id
     message_id = query.message.message_id
@@ -237,11 +249,14 @@ def active_orders_handler(update, context):
     if query.data == 'back':
         send_manager_main_menu(context, chat_id, message_id)
         return 'MANAGER_MAIN_MENU'
-    elif query.data.is_digit():
+    elif str(query.data).isdigit():
         order_id = query.data
 
         send_order_info(context, chat_id, message_id, order_id)
         return 'ORDER_HANDLER'
+    else:
+        send_manager_main_menu(context, chat_id, message_id)
+        return 'MANAGER_MAIN_MENU'
 
 
 def order_handler(update, context):
@@ -251,7 +266,9 @@ def order_handler(update, context):
     if query.data == 'back':
         send_active_orders(context, chat_id, message_id)
         return 'ACTIVE_ORDERS'
-
+    else:
+        send_manager_main_menu(context, chat_id, message_id)
+        return 'MANAGER_MAIN_MENU'
 
 def free_contractors_handler(update, context):
     query = update.callback_query
@@ -260,7 +277,7 @@ def free_contractors_handler(update, context):
     if query.data == 'back':
         send_manager_main_menu(context, chat_id, message_id)
         return 'MANAGER_MAIN_MENU'
-    else:
+    elif str(query.data).isdigit():
         contractor_id = query.data
         contractor_username = get_contractor(contractor_id)
         message_text = f'Контакт исполнителя: @{contractor_username}'
@@ -274,6 +291,9 @@ def free_contractors_handler(update, context):
             message_id=message_id
         )
         return 'CONTRACTOR_HANDLER'
+    else:
+        send_manager_main_menu(context, chat_id, message_id)
+        return 'MANAGER_MAIN_MENU'
 
 
 def contractor_contact_handler(update, context):
@@ -283,3 +303,27 @@ def contractor_contact_handler(update, context):
     if query.data == 'back':
         send_free_contractors(context, chat_id, message_id)
         return 'FREE_CONTRACTORS'
+    else:
+        send_manager_main_menu(context, chat_id, message_id)
+        return 'MANAGER_MAIN_MENU'
+
+
+def get_notification_handler(update, context):
+    query = update.callback_query
+    if update.message:
+        chat_id = update.message.chat_id
+        message_id = update.message.message_id
+    elif query:
+        chat_id = update.callback_query.message.chat_id
+        message_id = update.callback_query.message.message_id
+    else:
+        return
+
+    if query.data and query.data == 'miss':
+        context.bot.delete_message(
+            chat_id=chat_id,
+            message_id=message_id
+        )
+    else:
+        send_manager_main_menu(context, chat_id, message_id)
+        return 'MANAGER_MAIN_MENU'

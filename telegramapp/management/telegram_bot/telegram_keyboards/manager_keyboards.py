@@ -9,10 +9,9 @@ def get_back_menu():
     return inline_kb_markup
 
 
-def new_ticket_menu(ticket_id):
+def new_ticket_menu():
     inline_keyboard = [
-        [InlineKeyboardButton('Принять заявку', callback_data='read')],
-        [InlineKeyboardButton('Пропустить', callback_data=ticket_id)],
+        [InlineKeyboardButton('Прочитано', callback_data='miss')],
     ]
     inline_kb_markup = InlineKeyboardMarkup(inline_keyboard)
 

@@ -32,12 +32,12 @@ from .client_branch import (
 
 from .manager_branch import (
     manager_main_menu_handler,
-    active_tickets_handler,
+    tickets_handler,
     ticket_handler,
-    active_orders_handler,
+    manager_orders_handler,
     free_contractors_handler,
     contractor_contact_handler,
-
+    get_notification_handler,
 )
 from . import contractors
 
@@ -73,7 +73,7 @@ def handle_users_reply(update, context, db):
         'CLIENT_MAIN_MENU': client_main_menu_handler,
         'GET_TASK': get_task_handler,
         'GET_CREDENTIALS': get_credentials_handler,
-        'CREATE_TICKET': create_ticket_handler,
+        'CREATE_TICKET': partial(create_ticket_handler, db=db),
         'CLIENT_ACTIVE_ORDERS': active_orders_handler,
         'CLIENT_COMPLETE_ORDERS': complete_orders_handler,
         'CLIENT_ORDER': partial(get_order_handler, db=db),
@@ -105,12 +105,12 @@ def handle_users_reply(update, context, db):
 
         # Manager states
         'MANAGER_MAIN_MENU': manager_main_menu_handler,
-        'ACTIVE_TICKETS': active_tickets_handler,
+        'TICKETS': tickets_handler,
         'TICKET_HANDLER': ticket_handler,
-        'ACTIVE_ORDERS': active_orders_handler,
+        'ACTIVE_ORDERS': manager_orders_handler,
         'FREE_CONTRACTORS': free_contractors_handler,
         'CONTRACTOR_HANDLER': contractor_contact_handler,
-        # 'MANAGER_TICKETS': manager_tickets_handler,
+        'NOTIFICATION': get_notification_handler,
     }
 
     print(user_state)                                                   # отладочный принт

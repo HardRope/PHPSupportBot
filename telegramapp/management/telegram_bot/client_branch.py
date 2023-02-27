@@ -143,14 +143,14 @@ def send_message_to_client(context, order_id, chat_id, contractor_text, db):
     db.set(chat_id, 'NEW_MESSAGE_TO_CLIENT')
 
 
-def send_message_to_manager(context, chat_id, ticket_id):
-    message_text = f'Новая заявка от клиента'
-
+def send_message_to_manager(context, chat_id, ticket_id, ticket_text, db):
+    message_text = f'Поступила новая заявка (Тикет №{ticket_id}) \n{ticket_text}'
     context.bot.send_message(
         chat_id=chat_id,
         text=dedent(message_text),
-        reply_markup=new_ticket_menu(ticket_id)
+        reply_markup=new_ticket_menu()
     )
+    db.set(chat_id, 'NOTIFICATION')
 
 
 def send_order_info(context, chat_id, message_id, order_id, order_collection, message_text=None):
@@ -445,7 +445,7 @@ def tariff_handler(update, context):
         return 'CLIENT_MAIN_MENU'
 
 
-def create_ticket_handler(update, context):
+def create_ticket_handler(update, context, db):
     query = update.callback_query
     if update.message:
         chat_id = update.message.chat_id
@@ -467,7 +467,7 @@ def create_ticket_handler(update, context):
         ticket_id = create_ticket(ticket_text, chat_id, order_id)
         managers = get_active_managers()
         for manager in managers:
-            send_message_to_manager(context, manager, ticket_id)
+            send_message_to_manager(context, manager, ticket_id, ticket_text, db)
 
         context.bot.send_message(
             chat_id=chat_id,

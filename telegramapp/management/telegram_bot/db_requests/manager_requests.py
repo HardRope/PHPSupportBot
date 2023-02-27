@@ -13,9 +13,9 @@ def get_ticket(ticket_id):
     # TODO: вернуть всю инфу по тикету  -> dict
     ticket = Ticket.objects.get(id=ticket_id)
     ticket_order = ticket.order.id if ticket.order else 'Не указан'
-    client_username = ticket.client.user.tg_chat_id if ticket.client else 'Не указан'
+    client_username = ticket.client.user.username if ticket.client else 'Не указан'
 
-    contractor_username = ticket.order.contractor.user.tg_chat_id if ticket.order and ticket.order.contractor else 'Не указан'
+    contractor_username = ticket.order.contractor.user.username if ticket.order and ticket.order.contractor else 'Не указан'
 
     ticket_collection = {
         'ticket_id': ticket_id,
