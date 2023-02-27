@@ -9,7 +9,6 @@ from .telegram_keyboards.client_keyboards import (
     get_tariffs_menu,
     get_tariff_menu,
 )
-from .telegram_keyboards.contractor_keyboards import new_message_menu
 from .telegram_keyboards.manager_keyboards import new_ticket_menu
 from .db_requests.client_requests import (
     get_active_orders,
@@ -23,6 +22,8 @@ from .db_requests.client_requests import (
     create_ticket,
     get_active_managers,
 )
+
+from . import contractors
 
 
 def send_client_main_menu(context, chat_id, message_id, message_text=None):
@@ -123,9 +124,23 @@ def send_message_to_contractor(context, order_id, chat_id, client_text, db):
     context.bot.send_message(
         chat_id=chat_id,
         text=dedent(message_text),
-        reply_markup=new_message_menu(order_id)
+        reply_markup=contractors.keyboards.incoming_message(order_id)
     )
-    db.set(chat_id, 'GET_MESSAGE')
+    db.set(chat_id, contractors.State.INCOMING_MESSAGE.value)
+
+
+def send_message_to_client(context, order_id, chat_id, contractor_text, db):
+    message_text = f'Вам поступило сообщение от исполнителя (Заказ №{order_id}).' \
+                   f'\nДля ответа позже перейдите в Заказ и введите сообщение.' \
+                   f'\nСообщение:' \
+                   f'\n{contractor_text}'
+
+    context.bot.send_message(
+        chat_id=chat_id,
+        text=dedent(message_text),
+        reply_markup=contractors.keyboards.incoming_message(order_id)  # TODO заменить на клавиатуру для заказчика
+    )
+    db.set(chat_id, 'NEW_MESSAGE_TO_CLIENT')
 
 
 def send_message_to_manager(context, chat_id, ticket_id):

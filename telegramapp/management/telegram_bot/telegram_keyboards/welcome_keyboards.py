@@ -21,16 +21,6 @@ def get_client_agreement_menu():
     return inline_kb_markup
 
 
-def get_send_resume_menu():
-    inline_keyboard = [
-        [InlineKeyboardButton('Отправить резюме', callback_data='send_resume')],
-        [InlineKeyboardButton('Назад', callback_data='back')],
-    ]
-    inline_kb_markup = InlineKeyboardMarkup(inline_keyboard)
-
-    return inline_kb_markup
-
-
 def get_back_menu():
     inline_keyboard = [
         [InlineKeyboardButton('Назад', callback_data='back')],
@@ -39,7 +29,7 @@ def get_back_menu():
 
     return inline_kb_markup
 
-
+# TODO: Затянуть в contractors, если только для них и нужно
 def get_check_status_menu():
     inline_keyboard = [
         [InlineKeyboardButton('Проверить статус', callback_data='check')],
