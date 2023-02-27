@@ -3,6 +3,7 @@ from django.db import models
 
 from paymentapp.models import Tariff
 
+
 class Person(User):
     tg_chat_id = models.CharField(
         max_length=64,
@@ -68,10 +69,22 @@ class Contractor(models.Model):
 
     def __str__(self):
         return self.user.username
+    
+    @property
+    def chat_id(self):
+        return self.user.tg_chat_id
 
     class Meta:
         verbose_name = 'Подрядчик'
         verbose_name_plural = 'Подрядчики'
+
+    def activate(self):
+        self.active = True
+        self.save(update_fields=["active"])
+
+    def deactivate(self):
+        self.active = False
+        self.save(update_fields=["active"])
 
 
 class Subscription(models.Model):

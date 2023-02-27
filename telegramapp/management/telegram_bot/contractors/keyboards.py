@@ -55,7 +55,7 @@ def available_orders(order_ids):
     Assuming orders == [1,2,3]
     """
     return _create_keyboard(
-        {order_id: f"Новый заказ #{order_id}" for order_id in order_ids}, with_back=True
+        {order.id: f"Новый заказ #{order.id}" for order in order_ids}, with_back=True
     )
 
 
@@ -76,7 +76,7 @@ def orders(order_ids):
     Assuming orders == [1,2,3]
     """
     return _create_keyboard(
-        {order_id: f"Принятый заказ #{order_id}" for order_id in order_ids},
+        {order.id: f"Заказ #{order.id}" for order in orders},
         with_back=True,
     )
 

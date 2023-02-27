@@ -1,6 +1,6 @@
 from .state import ContractorState as State
 
-from . import db, send
+from . import send, storage
 
 
 def check_access(update, context):
@@ -8,9 +8,7 @@ def check_access(update, context):
     chat_id = query.message.chat_id
     message_id = query.message.message_id
 
-    # TODO вернуть проверку
-    # is_active = api.is_active(chat_id)
-    is_active = True
+    is_active = storage.is_active(chat_id)
 
     if not is_active:
         send.account_on_review(context, chat_id, message_id)
@@ -25,8 +23,10 @@ def process_resume(update, context):
     if update.message:
         chat_id = update.message.chat_id
         message_id = update.message.message_id
+        tg_username = update.message.chat.username
+        resume = update.message.text
         # TODO мб не удалять сообщение от пользователя?
-        # TODO save resume
+        storage.create_contractor(chat_id, tg_username, resume)
         send.account_on_review(context, chat_id, message_id, initial=True)
         return State.ACCOUNT_ON_REVIEW.value
 
@@ -49,13 +49,13 @@ def home_actions(update, context):
     message_id = query.message.message_id
 
     if query.data == "available_orders":
-        orders = [1, 2, 3]  # TODO implement and use get_available_orders(chat_id)
-        send.available_orders(context, chat_id, message_id)
+        orders = storage.get_available_orders(chat_id)
+        send.available_orders(context, chat_id, message_id, orders)
         return State.AVAILABLE_ORDERS.value
 
     if query.data == "current_orders":
-        orders = [1, 2, 3]  # TODO implement and use get_current_orders(chat_id)
-        send.orders(context, chat_id, message_id)
+        orders = storage.get_orders(chat_id)
+        send.orders(context, chat_id, message_id, orders)
         return State.ORDERS.value
 
     if query.data == "stats":
@@ -88,35 +88,40 @@ def available_orders_actions(update, context):
         return State.HOME.value
 
 
-def available_order_detail_actions(update, context):
+def available_order_detail_actions(update, context, db):
     query = update.callback_query
     chat_id = query.message.chat_id
     message_id = query.message.message_id
 
     if query.data.startswith("take_"):
-        order_id = query.data[
-            5:
-        ]  # TODO может быть лучше передать через redis или context
+        order_id = query.data[5:]
+        db.set(f"{chat_id}_is_taking", order_id)
+
         send.time_estimate_request(context, chat_id, message_id, order_id)
         return State.TIME_ESTIMATE_REQUEST.value
 
     if query.data == "back":
-        orders = [1, 2, 3]  # TODO implement and use get_available_orders(chat_id)
-        send.available_orders(context, chat_id, message_id)
+        orders = storage.get_available_orders(chat_id)
+        send.available_orders(context, chat_id, message_id, orders)
         return State.AVAILABLE_ORDERS.value
 
 
-def process_time_estimate(update, context):
+def process_time_estimate(update, context, db):
     query = update.callback_query
     if update.message:
         chat_id = update.message.chat_id
         message_id = update.message.message_id
-        # TODO get order from context or idk
-        order_id = 5
-        # TODO take order
-        send.order_detail_private(
+
+        order_id = db.get(f"{chat_id}_is_taking")
+
+        time_estimate_days = int(update.message.text)
+
+        send.order_detail_full(
             context, chat_id, order_id, message_id, with_keyboard=False
         )
+        storage.take_order(order_id, chat_id, time_estimate_days)
+        db.set(f"{chat_id}_is_taking", None)  # TODO мб удалить?
+        
         send.home(context, chat_id)
         return State.HOME.value
 
@@ -125,20 +130,20 @@ def process_time_estimate(update, context):
         message_id = update.callback_query.message.message_id
 
         if query.data == "back":
-            # TODO get order from context or idk
-            order_id = 5  # Example of available order
+            order_id = db.get(f"{chat_id}_is_taking")
             send.order_detail_public(context, chat_id, order_id)
             return State.AVAILABLE_ORDER_DETAIL.value
 
 
-def orders_actions(update, context):
+def orders_actions(update, context, db):
     query = update.callback_query
     chat_id = query.message.chat_id
     message_id = query.message.message_id
 
     if query.data.isdigit():
         order_id = query.data
-        send.order_detail_private(context, chat_id, order_id, message_id)
+        send.order_detail_full(context, chat_id, order_id, message_id)
+        db.set(f"{chat_id}_is_viewing", order_id)
         return State.ORDER_DETAIL.value
 
     if query.data == "back":
@@ -146,18 +151,17 @@ def orders_actions(update, context):
         return State.HOME.value
 
 
-def order_detail_actions(update, context):
+def order_detail_actions(update, context, db):
     query = update.callback_query
     if update.message:
         chat_id = update.message.chat_id
         message_id = update.message.message_id
-        # TODO get order from context or idk
-        order_id = 7  # Example taken order
-        client_chat_id = 7  # TODO: get from db
+        order_id = db.get(f"{chat_id}_is_viewing")
+        client_chat_id = storage.get_client_chat_id_by_order(order_id)
         text = update.message.text
         from telegramapp.management.telegram_bot.client_branch import send_message_to_client
-        send_message_to_client(context, order_id, chat_id, text, None)  # TODO pass DB
-        send.order_detail_private(context, chat_id, order_id, message_id)
+        send_message_to_client(context, order_id, client_chat_id, text, db)
+        send.order_detail_full(context, chat_id, order_id, message_id)
         return State.ORDER_DETAIL.value
 
 
@@ -166,27 +170,25 @@ def order_detail_actions(update, context):
         message_id = update.callback_query.message.message_id
 
         if query.data.startswith("complete_"):
-            order_id = query.data[
-                9:
-            ]  # TODO может быть лучше передать через redis или context
+            order_id = int(query.data[9:])
             send.order_report_request(context, chat_id, order_id, message_id)
             return State.ORDER_REPORT_REQUEST.value
 
         if query.data == "back":
-            orders = [1, 2, 3]  # TODO implement and use get_available_orders(chat_id)
-            send.orders(context, chat_id, message_id)
+            orders = storage.get_orders(chat_id)
+            db.set(f"{chat_id}_is_viewing", None)
+            send.orders(context, chat_id, message_id, orders)
             return State.ORDERS.value
 
 
-def process_order_report(update, context):
+def process_order_report(update, context, db):
     query = update.callback_query
 
     if update.message:
         chat_id = update.message.chat_id
         message_id = update.message.message_id
-        # TODO get order from context or idk
-        order_id = 7  # Example taken order
-        # TODO save report
+        order_id = db.get(f"{chat_id}_is_viewing")
+        db.set(f"{chat_id}_is_writing_report", update.message.text)
         send.order_complete_confirmation(context, chat_id, order_id, message_id)
         return State.ORDER_COMPLETE_CONFIRMATION.value
 
@@ -195,27 +197,31 @@ def process_order_report(update, context):
         message_id = update.callback_query.message.message_id
 
         if query.data == "back":
-            # TODO get order from context or idk
-            order_id = 5
-            send.order_detail_private(context, chat_id, order_id, message_id)
+            order_id = db.get(f"{chat_id}_is_viewing")
+            send.order_detail_full(context, chat_id, order_id, message_id)
             return State.ORDER_DETAIL.value
 
 
-def order_complete_confirmation_actions(update, context):
+def order_complete_confirmation_actions(update, context, db):
     query = update.callback_query
     chat_id = query.message.chat_id
     message_id = query.message.message_id
 
     if query.data == "yes":
-        # TODO actually complete order
-        order_id = 7
+        order_id = db.get(f"{chat_id}_is_viewing")
+        
+        report_text = db.get(f"{chat_id}_is_writing_report")
+        storage.save_report(order_id, report_text)
+        db.set(f"{chat_id}_is_writing_report", None)
+
         send.order_completed(context, chat_id, order_id, message_id)
         send.home(context, chat_id)
         return State.HOME.value
 
     if query.data == "no":
         order_id = 7
-        send.order_detail_private(context, chat_id, order_id, message_id)
+        send.order_detail_full(context, chat_id, order_id, message_id)
+        db.set(f"{chat_id}_is_writing_report", None)
         return State.ORDER_DETAIL.value
 
 
@@ -231,5 +237,5 @@ def incoming_message_actions(update, context):
     if query.data.isdigit():
         order_id = query.data
         # TODO: set current order in redis or context?
-        send.order_detail_private(context, chat_id, order_id, message_id)
+        send.order_detail_full(context, chat_id, order_id, message_id)
         return State.ORDER_DETAIL.value

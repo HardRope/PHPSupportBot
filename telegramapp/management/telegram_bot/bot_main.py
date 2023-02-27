@@ -91,13 +91,13 @@ def handle_users_reply(update, context, db):
         contractors.State.HOME.value: contractors.handlers.home_actions,
 
         contractors.State.AVAILABLE_ORDERS.value: contractors.handlers.available_orders_actions,
-        contractors.State.AVAILABLE_ORDER_DETAIL.value: contractors.handlers.available_order_detail_actions,
-        contractors.State.TIME_ESTIMATE_REQUEST.value: contractors.handlers.process_time_estimate,
+        contractors.State.AVAILABLE_ORDER_DETAIL.value: partial(contractors.handlers.available_order_detail_actions, db=db),
+        contractors.State.TIME_ESTIMATE_REQUEST.value: partial(contractors.handlers.process_time_estimate, db=db),
 
-        contractors.State.ORDERS.value: contractors.handlers.orders_actions,
-        contractors.State.ORDER_DETAIL.value: contractors.handlers.order_detail_actions,
-        contractors.State.ORDER_REPORT_REQUEST.value: contractors.handlers.process_order_report,
-        contractors.State.ORDER_COMPLETE_CONFIRMATION.value: contractors.handlers.order_complete_confirmation_actions,
+        contractors.State.ORDERS.value: partial(contractors.handlers.orders_actions, db=db),
+        contractors.State.ORDER_DETAIL.value: partial(contractors.handlers.order_detail_actions, db=db),
+        contractors.State.ORDER_REPORT_REQUEST.value: partial(contractors.handlers.process_order_report, db=db),
+        contractors.State.ORDER_COMPLETE_CONFIRMATION.value: partial(contractors.handlers.order_complete_confirmation_actions, db=db),
 
         contractors.State.STATISTICS.value: contractors.handlers.stats_actions,
 
