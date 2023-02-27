@@ -1,4 +1,7 @@
+import logging
 from textwrap import dedent
+
+from telegram import LabeledPrice, InlineKeyboardButton, InlineKeyboardMarkup
 
 from .telegram_keyboards.client_keyboards import (
     get_client_main_menu,
@@ -28,6 +31,8 @@ from .db_requests.client_requests import (
 from . import contractors
 
 
+logger = logging.getLogger(__name__)
+
 def send_client_main_menu(context, chat_id, message_id, message_text=None):
     subscription_details = get_subscription_details(chat_id)
     if subscription_details:
@@ -53,7 +58,7 @@ def send_client_main_menu(context, chat_id, message_id, message_text=None):
         text=dedent(message_text),
         reply_markup=get_client_main_menu()
     )
-
+    print('message_id', message_id)
     context.bot.delete_message(
         chat_id=chat_id,
         message_id=message_id
@@ -436,44 +441,34 @@ def tariffs_handler(update, context):
         send_client_main_menu(context, chat_id, message_id)
         return 'CLIENT_MAIN_MENU'
     elif query.data:
-        context.user_data['choosing_tariff'] = query.data
-        tariff = get_tariff(query.data)
+        tariff_name = query.data
+        tariff = get_tariff(tariff_name)
+        context.user_data['choosing_tariff'] = tariff
 
-        message_text = f'Название тарифа: {tariff.get("tariff_name")}' \
-                       f'\nОписание тарифа:\n{tariff.get("description")}' \
-                       f'\nСтоимость: {tariff.get("price")} руб.' \
-                       f'\nКоличество заказов в тарифе: {tariff.get("orders_amount")} шт.' \
-                       f'\nВремя ответа на заявку: {tariff.get("response_time")} ч.'
-        context.bot.send_message(
+        title = f'Оплата подписки по тарифу {tariff.get("tariff_name")}'
+        description = f'{tariff.get("description")}' \
+                      f'\nКоличество заказов в тарифе: {tariff.get("orders_amount")} шт.' \
+                      f'\nВремя ответа на заявку: {tariff.get("response_time")} ч.'
+        payload = 'Custom-Payload'
+        provider_token = context.bot_data['payment_token']
+        currency = 'RUB'
+        prices = [LabeledPrice("Стоимость", tariff.get("price") * 100)]
+
+        context.bot.send_invoice(
             chat_id=chat_id,
-            text=dedent(message_text),
-            reply_markup=get_tariff_menu()
+            title=title,
+            description=description,
+            payload=payload,
+            provider_token=provider_token,
+            currency=currency,
+            prices=prices,
+            reply_markup=get_tariff_menu(),
         )
-
         context.bot.delete_message(
             chat_id=chat_id,
             message_id=message_id
         )
-        return 'TARIFF'
-
-
-def tariff_handler(update, context):
-    query = update.callback_query
-    chat_id = query.message.chat_id
-    message_id = query.message.message_id
-
-    if query.data == 'back':
-        send_tariffs(context, chat_id, message_id)
-        return 'TARIFFS'
-    elif query.data:
-        tariff = context.user_data['choosing_tariff']
-
-        if buy_tariff(chat_id, tariff):
-            message_text = f'Вы оплатили тариф {tariff}. Приятного пользования нашим сервисом. '
-        else:
-            message_text = 'Произошла ошибка. Свяжитесь с менеджером для уточнения деталей.'
-        send_client_main_menu(context, chat_id, message_id, message_text)
-        return 'CLIENT_MAIN_MENU'
+        return 'PAYMENT'
 
 
 def create_ticket_handler(update, context, db):

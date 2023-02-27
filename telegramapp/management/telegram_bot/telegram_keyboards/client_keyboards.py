@@ -64,10 +64,9 @@ def get_tariffs_menu(tariffs):
 
 
 def get_tariff_menu():
-    inline_keyboard = [
-        [InlineKeyboardButton('Купить', callback_data='buy')],
-        [InlineKeyboardButton('Назад', callback_data='back')],
-    ]
-    inline_kb_markup = InlineKeyboardMarkup(inline_keyboard)
-
-    return inline_kb_markup
+    return {
+        "inline_keyboard": [
+            [{"text": "Купить", "pay": "True"}],
+            [{"text": "Назад", "callback_data": "back"}]
+        ]
+    }

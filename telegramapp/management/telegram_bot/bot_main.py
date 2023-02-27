@@ -1,15 +1,17 @@
 import logging
 from functools import partial
+
 from django.conf import settings
 
 import redis
+from telegram import SuccessfulPayment
 from telegram.ext import (
     Filters,
     Updater,
     CallbackQueryHandler,
     CommandHandler,
     MessageHandler,
-    # PreCheckoutQueryHandler,
+    PreCheckoutQueryHandler,
 )
 
 from .welcome_branch import (
@@ -26,7 +28,6 @@ from .client_branch import (
     complete_orders_handler,
     get_order_handler,
     tariffs_handler,
-    tariff_handler,
     get_credentials_handler,
     client_messages_handler
 )
@@ -42,6 +43,8 @@ from .manager_branch import (
 )
 from . import contractors
 
+from .bot_payment import payment_handler
+
 logger = logging.getLogger(__name__)
 
 
@@ -56,6 +59,9 @@ def handle_users_reply(update, context, db):
     elif update.callback_query:
         user_reply = update.callback_query.data
         chat_id = update.callback_query.message.chat_id
+    elif update.pre_checkout_query:
+        user_reply = None
+        chat_id = update.pre_checkout_query.from_user.id
     else:
         return
 
@@ -80,12 +86,11 @@ def handle_users_reply(update, context, db):
         'CLIENT_ORDER': partial(get_order_handler, db=db),
         'CLIENT_MESSAGES': client_messages_handler,
         'TARIFFS': tariffs_handler,
-        'TARIFF': tariff_handler,
 
         'NEW_MESSAGE_TO_CLIENT': None,  # TODO
 
         # Payment states
-        'PAYMENT': None,
+        'PAYMENT': payment_handler,
 
         # Contractor states
         contractors.State.ACCOUNT_ON_REVIEW.value: contractors.handlers.check_access,
@@ -143,9 +148,15 @@ def main():
     updater = Updater(tg_token, use_context=True)
     dispatcher = updater.dispatcher
 
+    dispatcher.bot_data = {
+        'payment_token': settings.PAYMENT_TOKEN,
+    }
+
+    dispatcher.add_handler(MessageHandler(Filters.successful_payment, handler_connected_db))
     dispatcher.add_handler(CallbackQueryHandler(handler_connected_db))
     dispatcher.add_handler(MessageHandler(Filters.text, handler_connected_db))
     dispatcher.add_handler(CommandHandler('start', handler_connected_db))
+    dispatcher.add_handler(PreCheckoutQueryHandler(handler_connected_db))
     dispatcher.add_error_handler(error)
 
     updater.start_polling()
