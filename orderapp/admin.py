@@ -1,6 +1,6 @@
 from django.contrib import admin
 
-from orderapp.models import Person, Client, Manager, Contractor, Subscription, Order, Ticket
+from orderapp.models import Person, Client, Manager, Contractor, Subscription, Order, Ticket, Messages
 from paymentapp.models import Tariff
 
 
@@ -42,3 +42,7 @@ class TicketAdmin(admin.ModelAdmin):
 @admin.register(Tariff)
 class TariffAdmin(admin.ModelAdmin):
     list_display = ['name', 'orders_amount', 'response_time', 'active']
+
+@admin.register(Messages)
+class MessagesAdmin(admin.ModelAdmin):
+    list_display = ['client', 'contractor', 'order']
