@@ -59,7 +59,8 @@ def home_actions(update, context):
         return State.ORDERS.value
 
     if query.data == "stats":
-        send.stats(context, chat_id, message_id)
+        stats = storage.get_statistics(chat_id)
+        send.stats(context, chat_id, message_id, stats)
         return State.STATISTICS.value
 
 
